@@ -1,0 +1,61 @@
+{
+  "dataset_name": "Caltrans PeMS08",
+  "source_provenance": "California Department of Transportation (District 8 San Bernardino Freeway Network)",
+  "official_zenodo_doi": "10.5281/zenodo.7816008",
+  "file_npz": "E:\\chronoeye\\data\\research\\pems08\\PEMS08.npz",
+  "file_csv": "E:\\chronoeye\\data\\research\\pems08\\PEMS08.csv",
+  "total_available_timesteps": 17856,
+  "total_available_nodes": 170,
+  "loaded_timesteps": 576,
+  "loaded_nodes": 30,
+  "temporal_resolution_seconds": 300.0,
+  "feature_mapping": {
+    "PEMS08_channel_0": "flow_rate (veh/5min) -> ChronoEye flow_rate",
+    "PEMS08_channel_1": "occupancy ([0, 1]) -> ChronoEye density (occ * 100)",
+    "PEMS08_channel_2": "speed (mph) -> ChronoEye average_speed",
+    "derived_congestion": "max(0, 1 - speed/65.0)*100 -> ChronoEye congestion",
+    "unobserved_fields": [
+      "queue_length",
+      "incoming_flow",
+      "outgoing_flow"
+    ]
+  },
+  "target_availability": {
+    "flow_rate": true,
+    "density": true,
+    "congestion": true,
+    "travel_time": false
+  },
+  "node_mapping": {
+    "PEMS08_SENSOR_000": 0,
+    "PEMS08_SENSOR_001": 1,
+    "PEMS08_SENSOR_002": 2,
+    "PEMS08_SENSOR_003": 3,
+    "PEMS08_SENSOR_004": 4,
+    "PEMS08_SENSOR_005": 5,
+    "PEMS08_SENSOR_006": 6,
+    "PEMS08_SENSOR_007": 7,
+    "PEMS08_SENSOR_008": 8,
+    "PEMS08_SENSOR_009": 9,
+    "PEMS08_SENSOR_010": 10,
+    "PEMS08_SENSOR_011": 11,
+    "PEMS08_SENSOR_012": 12,
+    "PEMS08_SENSOR_013": 13,
+    "PEMS08_SENSOR_014": 14,
+    "PEMS08_SENSOR_015": 15,
+    "PEMS08_SENSOR_016": 16,
+    "PEMS08_SENSOR_017": 17,
+    "PEMS08_SENSOR_018": 18,
+    "PEMS08_SENSOR_019": 19,
+    "PEMS08_SENSOR_020": 20,
+    "PEMS08_SENSOR_021": 21,
+    "PEMS08_SENSOR_022": 22,
+    "PEMS08_SENSOR_023": 23,
+    "PEMS08_SENSOR_024": 24,
+    "PEMS08_SENSOR_025": 25,
+    "PEMS08_SENSOR_026": 26,
+    "PEMS08_SENSOR_027": 27,
+    "PEMS08_SENSOR_028": 28,
+    "PEMS08_SENSOR_029": 29
+  }
+}

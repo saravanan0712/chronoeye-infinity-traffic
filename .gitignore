@@ -1,0 +1,111 @@
+# ==========================================
+# ChronoEye Infinity — Git Ignore Configuration
+# ==========================================
+
+# 1. Virtual Environments & Local Runtimes
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+py310/
+chronoeye/
+pyvenv.cfg
+pip-selfcheck.json
+
+# 2. Python & Bytecode Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 3. PyTorch, CUDA & Machine Learning Caches
+*.nvptx
+*.cubin
+*.fatbin
+*.cudafe1.*
+*.cudafe2.*
+.triton/
+.torch/
+.cache/
+
+# 4. Testing & Coverage Caches
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+test_results.log
+
+# 5. Node.js, Frontend & Bundler Artifacts
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.cache/
+*.tsbuildinfo
+.npm/
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 6. Environment & Secret Credentials
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.cert
+*.crt
+secrets.json
+credentials.json
+
+# 7. IDE & Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+.gemini/
+
+# 8. Transient Generated Output Artifacts & Audit Logs
+outputs/
+outputs/*
+!outputs/.gitkeep
+100
+powershell.cmd.bak
+
+# 9. Checkpoint Sub-Virtual Environments & Local Caches
+checkpoints/**/.venv/
+checkpoints/**/__pycache__/
+checkpoints/**/.pytest_cache/
+checkpoints/**/.git/

@@ -1,0 +1,5 @@
+category,baseline_performance,chronoeye_performance,improvement_gain
+Forecasting (+15m MAE),10.12 (Moving Avg),3.15 (ST-GNN),68.8% Reduction in Error
+Signal Control (Avg Delay),42.5 s/veh (Fixed),15.8 s/veh (Predictive),62.8% Reduction in Delay
+Route Optimization (Travel Time),90.0 s (Dijkstra),52.0 s (Predictive A*),42.2% Speedup
+Emergency Priority (Travel Time),60.0 s (Normal),39.0 s (Green Wave),35.0% Emergency Speedup

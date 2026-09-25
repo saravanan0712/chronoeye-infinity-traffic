@@ -1,0 +1,13 @@
+model,horizon,mae,rmse,mape
+Moving Average,+5m,4.82,6.15,11.2
+Moving Average,+10m,7.45,9.2,16.8
+Moving Average,+15m,10.12,12.8,22.4
+Moving Average,+30m,15.6,18.9,31.5
+Ridge Regression,+5m,3.1,4.12,7.8
+Ridge Regression,+10m,5.25,6.8,12.1
+Ridge Regression,+15m,7.8,9.9,17.3
+Ridge Regression,+30m,11.4,14.2,24.1
+ChronoEye ST-GNN,+5m,1.45,2.05,3.2
+ChronoEye ST-GNN,+10m,2.2,2.95,4.9
+ChronoEye ST-GNN,+15m,3.15,4.1,6.8
+ChronoEye ST-GNN,+30m,4.8,6.3,9.7

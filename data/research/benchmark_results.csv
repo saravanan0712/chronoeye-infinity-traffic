@@ -1,0 +1,2 @@
+scenario,seed,controller,mean_travel_time,avg_delay,avg_queue,throughput
+free_flow,42,Fixed,30.0,10.0,2.0,100.0

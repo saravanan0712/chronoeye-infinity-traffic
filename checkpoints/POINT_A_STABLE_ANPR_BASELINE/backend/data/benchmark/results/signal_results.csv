@@ -1,0 +1,4 @@
+controller,avg_delay_s,max_queue,avg_queue,throughput_veh_h,avg_travel_time_s
+Fixed Timing,42.5,24,18.2,380,65.0
+Reactive Actuated,28.0,16,11.4,440,48.0
+ChronoEye Predictive,15.8,7,4.1,530,32.5

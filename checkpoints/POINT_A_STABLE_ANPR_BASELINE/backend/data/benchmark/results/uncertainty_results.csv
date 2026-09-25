@@ -1,0 +1,4 @@
+interval_level,coverage_pct,mean_width,calibration_error
+80%,82.4,6.8,0.024
+90%,91.8,9.4,0.018
+95%,96.1,12.1,0.011

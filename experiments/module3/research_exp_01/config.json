@@ -1,0 +1,55 @@
+{
+  "experiment_id": "module3_research_exp_01",
+  "dataset_name": "ChronoEye_MultiSensor_Corridor_Benchmark_24h",
+  "dataset_version": "1.0.0",
+  "topology": {
+    "num_nodes": 10,
+    "num_edges": 34,
+    "directed": true,
+    "adjacency_normalization": "Symmetric Degree Normalization (D^-1/2 A D^-1/2)"
+  },
+  "temporal_parameters": {
+    "snapshot_interval_seconds": 300,
+    "history_window_steps": 3,
+    "history_window_minutes": 15,
+    "forecast_horizons_steps": [
+      1,
+      2,
+      3
+    ],
+    "forecast_horizons_minutes": [
+      5,
+      10,
+      15
+    ]
+  },
+  "splits": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15,
+    "chronological": true,
+    "train_samples": 198,
+    "val_samples": 42,
+    "test_samples": 43
+  },
+  "stgnn_hyperparameters": {
+    "in_channels": 8,
+    "hidden_dim": 32,
+    "num_st_blocks": 2,
+    "dropout": 0.1,
+    "optimizer": "Adam",
+    "learning_rate": 0.005,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "max_epochs": 50,
+    "best_epoch": 5,
+    "best_val_loss": 0.3921,
+    "parameter_count": 17116,
+    "random_seed": 42
+  },
+  "leakage_prevention": {
+    "chronological_split_verified": true,
+    "normalization_train_only": true,
+    "test_evaluation_post_selection_only": true
+  }
+}

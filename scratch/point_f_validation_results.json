@@ -1,0 +1,412 @@
+{
+  "dataset_inspection": {
+    "primary_video": "data\\videos\\traffic_video_modified.mp4",
+    "exists": true,
+    "size_mb": 35.96,
+    "distinct_physical_cameras_available": 1,
+    "limitation_stated": true
+  },
+  "multi_camera_runner_execution": {
+    "runtime_seconds": 337.28506994247437,
+    "per_camera_stats": {
+      "CAM_A_EAST": {
+        "frames_processed": 15,
+        "unique_tracks_count": 6,
+        "ocr_attempts": 25,
+        "confirmed_plates_count": 3
+      },
+      "CAM_B_WEST": {
+        "frames_processed": 15,
+        "unique_tracks_count": 6,
+        "ocr_attempts": 25,
+        "confirmed_plates_count": 3
+      }
+    },
+    "reconstructed_journeys_count": 6,
+    "journey_sample": [
+      {
+        "global_vehicle_id": "VEH_101",
+        "journey_id": "JRN_101",
+        "status": "ACTIVE",
+        "plate_number": "KW527",
+        "vehicle_type": "car",
+        "number_of_segments": 30,
+        "camera_sequence": [
+          "CAM_A_EAST",
+          "CAM_B_WEST"
+        ],
+        "local_track_ids": [
+          "TRK_101"
+        ],
+        "first_timestamp": 0.038,
+        "last_timestamp": 13.633
+      },
+      {
+        "global_vehicle_id": "VEH_102",
+        "journey_id": "JRN_102",
+        "status": "ACTIVE",
+        "plate_number": "SX8525",
+        "vehicle_type": "car",
+        "number_of_segments": 30,
+        "camera_sequence": [
+          "CAM_A_EAST",
+          "CAM_B_WEST"
+        ],
+        "local_track_ids": [
+          "TRK_102"
+        ],
+        "first_timestamp": 0.038,
+        "last_timestamp": 13.633
+      },
+      {
+        "global_vehicle_id": "VEH_103",
+        "journey_id": "JRN_103",
+        "status": "ACTIVE",
+        "plate_number": "WG2119",
+        "vehicle_type": "car",
+        "number_of_segments": 30,
+        "camera_sequence": [
+          "CAM_A_EAST",
+          "CAM_B_WEST"
+        ],
+        "local_track_ids": [
+          "TRK_103"
+        ],
+        "first_timestamp": 0.038,
+        "last_timestamp": 13.633
+      },
+      {
+        "global_vehicle_id": "VEH_104",
+        "journey_id": "JRN_104",
+        "status": "ACTIVE",
+        "plate_number": "XC147",
+        "vehicle_type": "car",
+        "number_of_segments": 28,
+        "camera_sequence": [
+          "CAM_A_EAST",
+          "CAM_B_WEST"
+        ],
+        "local_track_ids": [
+          "TRK_104"
+        ],
+        "first_timestamp": 0.152,
+        "last_timestamp": 13.633
+      },
+      {
+        "global_vehicle_id": "VEH_105",
+        "journey_id": "JRN_105",
+        "status": "ACTIVE",
+        "plate_number": "UNKNOWN",
+        "vehicle_type": "car",
+        "number_of_segments": 14,
+        "camera_sequence": [
+          "CAM_A_EAST",
+          "CAM_B_WEST"
+        ],
+        "local_track_ids": [
+          "TRK_105"
+        ],
+        "first_timestamp": 0.949,
+        "last_timestamp": 13.633
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "scenario_index": 1,
+      "scenario_name": "Scenario 1: Cross-Camera Re-ID with Confirmed Plate & Valid Travel (CAM_A_EAST -> CAM_B_WEST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_B_WEST",
+      "track_id_a": "TRK_101",
+      "track_id_b": "TRK_201",
+      "plate_a": "KA01AB1234",
+      "plate_b": "KA01AB1234",
+      "plate_similarity": 1.0,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 1.0,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_101",
+      "global_vehicle_id_b": "VEH_101",
+      "same_global_vehicle": true,
+      "journey_id": "JRN_101",
+      "camera_sequence": [
+        "CAM_A_EAST",
+        "CAM_B_WEST"
+      ],
+      "timestamp_sequence": [
+        100.0,
+        120.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 2,
+      "scenario_name": "Scenario 2: Cross-Camera Re-ID with Missing/Unreadable Plate via Appearance & Geometry (CAM_A_EAST -> CAM_C_NORTH)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_C_NORTH",
+      "track_id_a": "TRK_102",
+      "track_id_b": "TRK_302",
+      "plate_a": "UNKNOWN",
+      "plate_b": "UNKNOWN",
+      "plate_similarity": 0.5,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 0.825,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_102",
+      "global_vehicle_id_b": "VEH_102",
+      "same_global_vehicle": true,
+      "journey_id": "JRN_102",
+      "camera_sequence": [
+        "CAM_A_EAST",
+        "CAM_C_NORTH"
+      ],
+      "timestamp_sequence": [
+        200.0,
+        218.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 3,
+      "scenario_name": "Scenario 3: Different Vehicles with Conflicting Plate Numbers (CAM_A_EAST -> CAM_B_WEST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_B_WEST",
+      "track_id_a": "TRK_103",
+      "track_id_b": "TRK_203",
+      "plate_a": "MH12DE3333",
+      "plate_b": "DL04XY9999",
+      "plate_similarity": 0.0,
+      "appearance_similarity": 0.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 0.5,
+      "decision": "MATCH_PROBABLE",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_103",
+      "global_vehicle_id_b": "VEH_104",
+      "same_global_vehicle": false,
+      "journey_id": "JRN_104",
+      "camera_sequence": [
+        "CAM_B_WEST"
+      ],
+      "timestamp_sequence": [
+        322.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 4,
+      "scenario_name": "Scenario 4: Spatio-Temporal Violation \u2014 Impossible Speed / Instantaneous Travel (CAM_A_EAST -> CAM_B_WEST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_B_WEST",
+      "track_id_a": "TRK_104",
+      "track_id_b": "TRK_204",
+      "plate_a": "KA05JK5555",
+      "plate_b": "KA05JK5555",
+      "plate_similarity": 0.0,
+      "appearance_similarity": 0.0,
+      "visual_feature_similarity": 0.0,
+      "vehicle_type_similarity": 0.0,
+      "movement_direction_similarity": 0.0,
+      "temporal_compatibility": 0.0,
+      "spatial_compatibility": 0.0,
+      "weighted_final_score": 0.0,
+      "decision": "MATCH_REJECTED",
+      "rejection_reason": "PHYSICALLY_IMPOSSIBLE_SPEED (\u0394t=1.0s < min_t=9.0s)",
+      "global_vehicle_id_a": "VEH_105",
+      "global_vehicle_id_b": "VEH_106",
+      "same_global_vehicle": false,
+      "journey_id": "JRN_106",
+      "camera_sequence": [
+        "CAM_B_WEST"
+      ],
+      "timestamp_sequence": [
+        401.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 5,
+      "scenario_name": "Scenario 5: Spatio-Temporal Violation \u2014 Exceeded Time Gap / Inactivity (CAM_A_EAST -> CAM_B_WEST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_B_WEST",
+      "track_id_a": "TRK_105",
+      "track_id_b": "TRK_205",
+      "plate_a": "TN09ZZ7777",
+      "plate_b": "TN09ZZ7777",
+      "plate_similarity": 0.0,
+      "appearance_similarity": 0.0,
+      "visual_feature_similarity": 0.0,
+      "vehicle_type_similarity": 0.0,
+      "movement_direction_similarity": 0.0,
+      "temporal_compatibility": 0.0,
+      "spatial_compatibility": 0.0,
+      "weighted_final_score": 0.0,
+      "decision": "MATCH_REJECTED",
+      "rejection_reason": "TIME_GAP_EXCEEDED (\u0394t=4000.0s > max=3600.0s)",
+      "global_vehicle_id_a": "VEH_107",
+      "global_vehicle_id_b": "VEH_108",
+      "same_global_vehicle": false,
+      "journey_id": "JRN_108",
+      "camera_sequence": [
+        "CAM_B_WEST"
+      ],
+      "timestamp_sequence": [
+        4500.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 6,
+      "scenario_name": "Scenario 6: Spatio-Temporal Violation \u2014 Negative Time Delta (CAM_A_EAST -> CAM_B_WEST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_B_WEST",
+      "track_id_a": "TRK_106",
+      "track_id_b": "TRK_206",
+      "plate_a": "KA04MM8888",
+      "plate_b": "KA04MM8888",
+      "plate_similarity": 1.0,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 1.0,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_109",
+      "global_vehicle_id_b": "VEH_109",
+      "same_global_vehicle": true,
+      "journey_id": "JRN_109",
+      "camera_sequence": [
+        "CAM_A_EAST",
+        "CAM_B_WEST"
+      ],
+      "timestamp_sequence": [
+        620.0,
+        600.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 7,
+      "scenario_name": "Scenario 7: Non-Directly Connected Urban Transition / Unobserved Gap (CAM_A_EAST -> CAM_D_NORTH)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_D_NORTH",
+      "track_id_a": "TRK_107",
+      "track_id_b": "TRK_407",
+      "plate_a": "KA53MN1111",
+      "plate_b": "KA53MN1111",
+      "plate_similarity": 1.0,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 0.6,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 0.96,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_110",
+      "global_vehicle_id_b": "VEH_110",
+      "same_global_vehicle": true,
+      "journey_id": "JRN_110",
+      "camera_sequence": [
+        "CAM_A_EAST",
+        "CAM_D_NORTH"
+      ],
+      "timestamp_sequence": [
+        700.0,
+        735.0
+      ],
+      "has_unobserved_gap": true
+    },
+    {
+      "scenario_index": 8,
+      "scenario_name": "Scenario 8: Intra-Camera Track Drop & Recovery on Same Camera (CAM_A_EAST -> CAM_A_EAST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_A_EAST",
+      "track_id_a": "TRK_108",
+      "track_id_b": "TRK_109",
+      "plate_a": "KA02CD2222",
+      "plate_b": "KA02CD2222",
+      "plate_similarity": 1.0,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 0.7,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 0.985,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_111",
+      "global_vehicle_id_b": "VEH_111",
+      "same_global_vehicle": true,
+      "journey_id": "JRN_111",
+      "camera_sequence": [
+        "CAM_A_EAST"
+      ],
+      "timestamp_sequence": [
+        800.0,
+        804.0
+      ],
+      "has_unobserved_gap": false
+    },
+    {
+      "scenario_index": 9,
+      "scenario_name": "Scenario 9: Same-Camera Co-Presence Mutual Exclusion (CAM_A_EAST -> CAM_A_EAST)",
+      "camera_a": "CAM_A_EAST",
+      "camera_b": "CAM_A_EAST",
+      "track_id_a": "TRK_110",
+      "track_id_b": "TRK_111",
+      "plate_a": "KA03EE3333",
+      "plate_b": "KA03FF4444",
+      "plate_similarity": 0.4,
+      "appearance_similarity": 1.0,
+      "visual_feature_similarity": 1.0,
+      "vehicle_type_similarity": 1.0,
+      "movement_direction_similarity": 1.0,
+      "temporal_compatibility": 1.0,
+      "spatial_compatibility": 1.0,
+      "weighted_final_score": 0.79,
+      "decision": "MATCH_CONFIRMED",
+      "rejection_reason": null,
+      "global_vehicle_id_a": "VEH_108",
+      "global_vehicle_id_b": "VEH_112",
+      "same_global_vehicle": false,
+      "journey_id": "JRN_112",
+      "camera_sequence": [
+        "CAM_A_EAST"
+      ],
+      "timestamp_sequence": [
+        900.0
+      ],
+      "has_unobserved_gap": false
+    }
+  ],
+  "module3_graph_handoff": {
+    "node_count": 32,
+    "edge_count": 38,
+    "vehicle_nodes_count": 12,
+    "camera_nodes_count": 4,
+    "transition_edges_count": 0,
+    "transition_edge_samples": []
+  }
+}

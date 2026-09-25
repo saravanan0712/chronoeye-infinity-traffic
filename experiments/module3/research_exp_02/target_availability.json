@@ -1,0 +1,6 @@
+{
+  "flow_rate": true,
+  "density": true,
+  "congestion": true,
+  "travel_time": false
+}

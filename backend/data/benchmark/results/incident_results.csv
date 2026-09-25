@@ -1,0 +1,6 @@
+metric,value
+Precision,0.941
+Recall,0.918
+F1-Score,0.929
+False Positive Rate (FPR),0.038
+Detection Latency (s),4.2

@@ -1,0 +1,60 @@
+{
+  "experiment_id": "module3_research_exp_02",
+  "dataset_name": "Caltrans_PeMS08_Real",
+  "dataset_version": "1.0.0",
+  "provenance": {
+    "source": "California Department of Transportation Performance Measurement System",
+    "district": "District 8 (San Bernardino Freeway Network)",
+    "doi": "10.5281/zenodo.7816008"
+  },
+  "topology": {
+    "num_nodes": 30,
+    "num_edges": 21,
+    "directed": true,
+    "adjacency_normalization": "Symmetric Degree Normalization (D^-1/2 A D^-1/2)"
+  },
+  "temporal_parameters": {
+    "snapshot_interval_seconds": 300,
+    "history_window_steps": 3,
+    "history_window_minutes": 15,
+    "forecast_horizons_steps": [
+      1,
+      2,
+      3
+    ],
+    "forecast_horizons_minutes": [
+      5,
+      10,
+      15
+    ]
+  },
+  "splits": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15,
+    "chronological": true,
+    "train_samples": 399,
+    "val_samples": 85,
+    "test_samples": 87
+  },
+  "stgnn_hyperparameters": {
+    "in_channels": 8,
+    "hidden_dim": 32,
+    "num_st_blocks": 2,
+    "dropout": 0.1,
+    "optimizer": "Adam",
+    "learning_rate": 0.005,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "max_epochs": 50,
+    "best_epoch": 16,
+    "best_val_loss": 0.0654,
+    "parameter_count": 17116,
+    "random_seed": 42
+  },
+  "leakage_prevention": {
+    "chronological_split_verified": true,
+    "normalization_train_only": true,
+    "test_evaluation_post_selection_only": true
+  }
+}

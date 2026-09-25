@@ -1,0 +1,21 @@
+# ==========================================
+# ChronoEye Infinity — Git LFS Configuration
+# ==========================================
+
+# 1. Video Artifacts
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.avi filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+
+# 2. Large Datasets & NumPy Archives
+*.npz filter=lfs diff=lfs merge=lfs -text
+*.npy filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
+*.parquet filter=lfs diff=lfs merge=lfs -text
+
+# 3. Deep Learning Weights & Checkpoints
+*.pt filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.engine filter=lfs diff=lfs merge=lfs -text

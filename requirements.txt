@@ -1,0 +1,36 @@
+# ==============================================================================
+# ChronoEye Infinity — Backend & Research Python Dependencies
+# Python Version: >= 3.9 (Recommended: 3.10)
+# ==============================================================================
+
+# Core Machine Learning & Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+
+# Computer Vision, OCR & Image Processing
+opencv-python>=4.8.0
+easyocr>=1.7.0
+paddleocr>=2.7.0
+paddlepaddle>=2.5.0
+pillow>=9.5.0
+
+# Scientific Computing, Graph Analysis & Forecasting
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=2.0.0
+networkx>=3.1.0
+matplotlib>=3.7.0
+
+# Backend Framework & Data Validation
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+websockets>=11.0
+
+# Development, Testing & Verification
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+tqdm>=4.65.0
+requests>=2.31.0

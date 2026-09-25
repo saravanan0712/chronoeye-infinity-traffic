@@ -1,0 +1,37 @@
+{
+  "model_name": "SpatioTemporalGNN_Research",
+  "parameter_count": 17116,
+  "layers": [
+    {
+      "type": "FeatureProjection",
+      "in": 8,
+      "out": 32
+    },
+    {
+      "type": "STGNNBlock_1",
+      "spatial": "GraphSpatialConv",
+      "temporal": "TemporalGRUBlock(hidden=32)"
+    },
+    {
+      "type": "STGNNBlock_2",
+      "spatial": "GraphSpatialConv",
+      "temporal": "TemporalGRUBlock(hidden=32)"
+    },
+    {
+      "type": "MultiHorizonForecastHead",
+      "horizons": [
+        "+5min",
+        "+10min",
+        "+15min"
+      ],
+      "targets": [
+        "flow_rate",
+        "density",
+        "congestion",
+        "travel_time"
+      ]
+    }
+  ],
+  "device": "cpu",
+  "random_seed": 42
+}

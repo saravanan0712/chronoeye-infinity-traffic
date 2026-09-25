@@ -1,0 +1,18 @@
+{
+  "config": {
+    "seeds": [
+      42
+    ]
+  },
+  "raw_records": [
+    {
+      "scenario": "free_flow",
+      "seed": 42,
+      "controller": "Fixed",
+      "mean_travel_time": 30.0,
+      "avg_delay": 10.0,
+      "avg_queue_length": 2.0,
+      "throughput": 100.0
+    }
+  ]
+}

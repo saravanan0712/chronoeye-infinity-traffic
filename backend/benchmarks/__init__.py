@@ -1,0 +1,3 @@
+"""
+ChronoEye Infinity - Benchmarks Package
+"""

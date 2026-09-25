@@ -1,0 +1,8 @@
+ablation_configuration,avg_travel_time_s,prediction_mae,incident_f1
+Full System (Complete Pipeline),32.5,1.45,0.929
+Without Cross-Camera Re-ID,36.2,2.8,0.85
+Without Graph Representation,41.0,4.2,0.78
+Without ST-GNN Forecasting,48.0,7.45,0.71
+Without Uncertainty Estimation,35.8,1.45,0.91
+Without Predictive Signal Control,48.0,1.45,0.929
+Without Predictive Routing,65.0,1.45,0.929
