@@ -1,0 +1,274 @@
+{
+  "ST-GNN": {
+    "PLUS_5MIN": {
+      "flow_rate": {
+        "mae": 0.4542,
+        "rmse": 0.5951,
+        "mape": 9.0845
+      },
+      "density": {
+        "mae": 0.2866,
+        "rmse": 0.4072,
+        "mape": 5.7305
+      },
+      "congestion": {
+        "mae": 0.2539,
+        "rmse": 0.3937,
+        "mape": 5.0671
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_10MIN": {
+      "flow_rate": {
+        "mae": 0.2389,
+        "rmse": 0.3261,
+        "mape": 4.7776
+      },
+      "density": {
+        "mae": 0.2761,
+        "rmse": 0.3676,
+        "mape": 5.5196
+      },
+      "congestion": {
+        "mae": 0.2072,
+        "rmse": 0.3164,
+        "mape": 4.1345
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_15MIN": {
+      "flow_rate": {
+        "mae": 0.2439,
+        "rmse": 0.3367,
+        "mape": 4.8782
+      },
+      "density": {
+        "mae": 0.2659,
+        "rmse": 0.3586,
+        "mape": 5.3162
+      },
+      "congestion": {
+        "mae": 0.1561,
+        "rmse": 0.3013,
+        "mape": 3.1122
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    }
+  },
+  "Persistence": {
+    "PLUS_5MIN": {
+      "flow_rate": {
+        "mae": 0.133,
+        "rmse": 0.2072,
+        "mape": 2.6598
+      },
+      "density": {
+        "mae": 0.1188,
+        "rmse": 0.2088,
+        "mape": 2.3748
+      },
+      "congestion": {
+        "mae": 0.0529,
+        "rmse": 0.1521,
+        "mape": 1.0571
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_10MIN": {
+      "flow_rate": {
+        "mae": 0.1452,
+        "rmse": 0.2301,
+        "mape": 2.9049
+      },
+      "density": {
+        "mae": 0.1294,
+        "rmse": 0.2392,
+        "mape": 2.5854
+      },
+      "congestion": {
+        "mae": 0.0713,
+        "rmse": 0.2208,
+        "mape": 1.4218
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_15MIN": {
+      "flow_rate": {
+        "mae": 0.154,
+        "rmse": 0.2429,
+        "mape": 3.08
+      },
+      "density": {
+        "mae": 0.1388,
+        "rmse": 0.257,
+        "mape": 2.7744
+      },
+      "congestion": {
+        "mae": 0.0822,
+        "rmse": 0.2661,
+        "mape": 1.6363
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    }
+  },
+  "Moving_Average": {
+    "PLUS_5MIN": {
+      "flow_rate": {
+        "mae": 0.1506,
+        "rmse": 0.2179,
+        "mape": 3.0123
+      },
+      "density": {
+        "mae": 0.1383,
+        "rmse": 0.2275,
+        "mape": 2.7638
+      },
+      "congestion": {
+        "mae": 0.0918,
+        "rmse": 0.2751,
+        "mape": 1.8277
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_10MIN": {
+      "flow_rate": {
+        "mae": 0.1614,
+        "rmse": 0.2313,
+        "mape": 3.2283
+      },
+      "density": {
+        "mae": 0.1475,
+        "rmse": 0.2386,
+        "mape": 2.9483
+      },
+      "congestion": {
+        "mae": 0.0978,
+        "rmse": 0.2935,
+        "mape": 1.9453
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_15MIN": {
+      "flow_rate": {
+        "mae": 0.1719,
+        "rmse": 0.2433,
+        "mape": 3.4386
+      },
+      "density": {
+        "mae": 0.1564,
+        "rmse": 0.2471,
+        "mape": 3.1251
+      },
+      "congestion": {
+        "mae": 0.1022,
+        "rmse": 0.3073,
+        "mape": 2.0344
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    }
+  },
+  "Linear_Regression": {
+    "PLUS_5MIN": {
+      "flow_rate": {
+        "mae": 0.1205,
+        "rmse": 0.1851,
+        "mape": 2.4102
+      },
+      "density": {
+        "mae": 0.1122,
+        "rmse": 0.1916,
+        "mape": 2.2417
+      },
+      "congestion": {
+        "mae": 0.0613,
+        "rmse": 0.1499,
+        "mape": 1.2252
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_10MIN": {
+      "flow_rate": {
+        "mae": 0.1308,
+        "rmse": 0.2038,
+        "mape": 2.6167
+      },
+      "density": {
+        "mae": 0.1233,
+        "rmse": 0.2176,
+        "mape": 2.4643
+      },
+      "congestion": {
+        "mae": 0.0859,
+        "rmse": 0.2157,
+        "mape": 1.7138
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    },
+    "PLUS_15MIN": {
+      "flow_rate": {
+        "mae": 0.1397,
+        "rmse": 0.2179,
+        "mape": 2.794
+      },
+      "density": {
+        "mae": 0.1337,
+        "rmse": 0.2334,
+        "mape": 2.6725
+      },
+      "congestion": {
+        "mae": 0.103,
+        "rmse": 0.2576,
+        "mape": 2.0535
+      },
+      "travel_time": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "mape": 0.0
+      }
+    }
+  }
+}

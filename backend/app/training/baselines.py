@@ -111,6 +111,37 @@ class LinearRegressionBaseline:
         self.alpha = alpha
         self.weights: Optional[torch.Tensor] = None  # [T_in * F, H * T_target]
 
+    def fit_loader(self, train_loader: Any, device: Optional[torch.device] = None):
+        """
+        Fits Linear Ridge Regression iteratively across batches in train_loader.
+        Avoids materializing all train samples into a single massive tensor.
+        """
+        dev = device or torch.device("cpu")
+        XtX = None
+        XtY = None
+
+        for bx, _, by, _ in train_loader:
+            B, T_in, N, F = bx.shape
+            _, H, _, T_target = by.shape
+
+            X_mat = bx.permute(0, 2, 1, 3).contiguous().view(B * N, T_in * F).to(dev)
+            Y_mat = by.permute(0, 2, 1, 3).contiguous().view(B * N, H * T_target).to(dev)
+
+            X_mat = torch.nan_to_num(X_mat, nan=0.0)
+            Y_mat = torch.nan_to_num(Y_mat, nan=0.0)
+
+            if XtX is None:
+                XtX = torch.matmul(X_mat.t(), X_mat)
+                XtY = torch.matmul(X_mat.t(), Y_mat)
+            else:
+                XtX += torch.matmul(X_mat.t(), X_mat)
+                XtY += torch.matmul(X_mat.t(), Y_mat)
+
+        if XtX is not None:
+            reg = self.alpha * torch.eye(XtX.size(0), device=dev)
+            inv_term = torch.inverse(XtX + reg)
+            self.weights = torch.matmul(inv_term, XtY)
+
     def fit(self, x_train: torch.Tensor, y_train: torch.Tensor):
         """
         x_train: [B, T_in, N, F]
@@ -143,9 +174,10 @@ class LinearRegressionBaseline:
             # Fallback to persistence if not fitted
             return PersistenceBaseline().predict(x, num_horizons, num_targets)
 
-        X_mat = x.permute(0, 2, 1, 3).contiguous().view(B * N, T_in * F)
+        X_mat = x.permute(0, 2, 1, 3).contiguous().view(B * N, T_in * F).to(self.weights.device)
         X_mat = torch.nan_to_num(X_mat, nan=0.0)
         Y_pred = torch.matmul(X_mat, self.weights)  # [B * N, H * T_target]
 
-        preds = Y_pred.view(B, N, num_horizons, num_targets).permute(0, 2, 1, 3).contiguous()
+        preds = Y_pred.view(B, N, num_horizons, num_targets).permute(0, 2, 1, 3).contiguous().to(x.device)
         return preds
+

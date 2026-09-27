@@ -8,8 +8,11 @@ TRAIN-only feature/target normalization, deterministic node ordering, and leakag
 import math
 import uuid
 import statistics
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from typing import List, Dict, Optional, Any, Union, Tuple
+from typing import List, Dict, Optional, Any, Union, Tuple, Sequence
 from pydantic import BaseModel, Field
 
 from app.graph.graph_schema import NodeType, EdgeType
@@ -80,6 +83,227 @@ class SpatioTemporalSample(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
+class LazySpatioTemporalSplit(Dataset):
+    """
+    Lazy PyTorch Dataset for mini-batch generation.
+    Slices historical inputs [T_in, N, F] and multi-horizon targets [H, N, Target_F]
+    on-the-fly from pre-normalized compact tensors with zero memory duplication.
+    """
+    def __init__(
+        self,
+        norm_features: torch.Tensor,       # [T, N, F] float32
+        norm_targets: torch.Tensor,        # [T, N, Target_F] float32
+        raw_features: torch.Tensor,        # [T, N, F] float32
+        raw_targets: torch.Tensor,         # [T, N, Target_F] float32
+        feature_mask: torch.Tensor,        # [F] bool
+        target_mask: torch.Tensor,         # [Target_F] bool
+        input_sequence_length: int,
+        forecast_horizons: List[Tuple[str, int]],
+        sample_start_indices: List[int],
+        split: DatasetSplit,
+        feature_names: List[str],
+        target_names: List[str],
+        node_ids: List[str],
+        start_time_offset: float = 0.0,
+        window_seconds: float = 300.0,
+    ):
+        self.norm_features = norm_features
+        self.norm_targets = norm_targets
+        self.raw_features = raw_features
+        self.raw_targets = raw_targets
+        self.feature_mask = feature_mask
+        self.target_mask = target_mask
+        self.input_sequence_length = input_sequence_length
+        self.forecast_horizons = forecast_horizons
+        self.sample_start_indices = sample_start_indices
+        self.split = split
+        self.feature_names = feature_names
+        self.target_names = target_names
+        self.node_ids = node_ids
+        self.num_nodes = len(node_ids)
+        self.start_time_offset = start_time_offset
+        self.window_seconds = window_seconds
+
+        # Pre-expand static boolean masks for O(1) mini-batch collation
+        self._x_mask = self.feature_mask.view(1, 1, -1).expand(
+            self.input_sequence_length, self.num_nodes, -1
+        ).clone()
+        self._y_mask = self.target_mask.view(1, 1, -1).expand(
+            len(self.forecast_horizons), self.num_nodes, -1
+        ).clone()
+
+    def __len__(self) -> int:
+        return len(self.sample_start_indices)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        t = self.sample_start_indices[idx]
+        x = self.norm_features[t : t + self.input_sequence_length]  # [T_in, N, F]
+        x_mask = self._x_mask                                        # [T_in, N, F]
+
+        y_steps = [t + self.input_sequence_length - 1 + h_step for _, h_step in self.forecast_horizons]
+        y = self.norm_targets[y_steps]                               # [H, N, Target_F]
+        y_mask = self._y_mask                                        # [H, N, Target_F]
+        return x, x_mask, y, y_mask
+
+    def get_sample(self, idx: int) -> SpatioTemporalSample:
+        """Constructs an individual SpatioTemporalSample on demand for legacy inspection."""
+        t = self.sample_start_indices[idx]
+        t_in = self.input_sequence_length
+        input_start = self.start_time_offset + float(t * self.window_seconds)
+        input_end = self.start_time_offset + float((t + t_in) * self.window_seconds)
+
+        target_times = {}
+        horizon_names = []
+        for h_name, h_step in self.forecast_horizons:
+            target_t = t + t_in - 1 + h_step
+            target_times[h_name] = self.start_time_offset + float(target_t * self.window_seconds)
+            horizon_names.append(h_name)
+
+        x_raw_t = self.raw_features[t : t + t_in].tolist()
+        x_norm_t = self.norm_features[t : t + t_in].tolist()
+        x_mask_t = self._x_mask.tolist()
+
+        y_steps = [t + t_in - 1 + h_step for _, h_step in self.forecast_horizons]
+        y_raw_t = self.raw_targets[y_steps].tolist()
+        y_norm_t = self.norm_targets[y_steps].tolist()
+        y_mask_t = self._y_mask.tolist()
+
+        # Set unobserved entries where mask is False to None in raw/normalized lists
+        f_mask_np = self.feature_mask.numpy()
+        for step in range(len(x_raw_t)):
+            for node in range(len(x_raw_t[step])):
+                for f in range(len(f_mask_np)):
+                    if not f_mask_np[f]:
+                        x_raw_t[step][node][f] = None
+                        x_norm_t[step][node][f] = None
+
+        t_mask_np = self.target_mask.numpy()
+        for h in range(len(y_raw_t)):
+            for node in range(len(y_raw_t[h])):
+                for tf in range(len(t_mask_np)):
+                    if not t_mask_np[tf]:
+                        y_raw_t[h][node][tf] = None
+                        y_norm_t[h][node][tf] = None
+
+        return SpatioTemporalSample(
+            sample_id=f"SMP_{self.split.value}_{int(input_start)}_{int(input_end)}",
+            split=self.split,
+            input_start_time=input_start,
+            input_end_time=input_end,
+            target_times=target_times,
+            horizon_names=horizon_names,
+            x_raw=x_raw_t,
+            x_normalized=x_norm_t,
+            x_mask=x_mask_t,
+            y_raw=y_raw_t,
+            y_normalized=y_norm_t,
+            y_mask=y_mask_t,
+        )
+
+
+class LazySampleListProxy(Sequence):
+    """
+    List-like proxy over LazySpatioTemporalSplit allowing len(), indexing, slicing,
+    and iteration without eagerly instantiating thousands of SpatioTemporalSample objects.
+    """
+    def __init__(self, split_dataset: LazySpatioTemporalSplit):
+        self._split = split_dataset
+
+    def __len__(self) -> int:
+        return len(self._split)
+
+    def __getitem__(self, idx: Union[int, slice]) -> Any:
+        if isinstance(idx, slice):
+            return [self._split.get_sample(i) for i in range(*idx.indices(len(self._split)))]
+        if idx < 0:
+            idx += len(self._split)
+        if idx < 0 or idx >= len(self._split):
+            raise IndexError(f"Sample index {idx} out of range (length {len(self._split)})")
+        return self._split.get_sample(idx)
+
+    def __iter__(self):
+        for i in range(len(self._split)):
+            yield self._split.get_sample(i)
+
+    def __bool__(self) -> bool:
+        return len(self._split) > 0
+
+    @property
+    def split_dataset(self) -> LazySpatioTemporalSplit:
+        return self._split
+
+
+class CompactSpatioTemporalDataset:
+    """
+    Memory-hardened spatio-temporal dataset container for ST-GNN training.
+    Provides PyTorch DataLoaders with on-demand mini-batch collation and train-only normalization.
+    """
+    def __init__(
+        self,
+        dataset_id: str,
+        input_sequence_length: int,
+        forecast_horizons: List[str],
+        feature_names: List[str],
+        target_names: List[str],
+        adjacency: AdjacencyData,
+        feature_scaler: NormalizationParams,
+        target_scaler: NormalizationParams,
+        train_dataset: LazySpatioTemporalSplit,
+        val_dataset: LazySpatioTemporalSplit,
+        test_dataset: LazySpatioTemporalSplit,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        self.dataset_id = dataset_id
+        self.input_sequence_length = input_sequence_length
+        self.forecast_horizons = forecast_horizons
+        self.feature_names = feature_names
+        self.target_names = target_names
+        self.adjacency = adjacency
+        self.feature_scaler = feature_scaler
+        self.target_scaler = target_scaler
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+        self.test_dataset = test_dataset
+        self.train_samples = LazySampleListProxy(train_dataset)
+        self.val_samples = LazySampleListProxy(val_dataset)
+        self.test_samples = LazySampleListProxy(test_dataset)
+        self.metadata = metadata or {}
+
+    @property
+    def total_samples(self) -> int:
+        return len(self.train_dataset) + len(self.val_dataset) + len(self.test_dataset)
+
+    @property
+    def num_nodes(self) -> int:
+        return self.adjacency.num_nodes
+
+    def get_dataloader(
+        self,
+        split: Union[str, DatasetSplit],
+        batch_size: int = 16,
+        shuffle: bool = False,
+        num_workers: int = 0,
+    ) -> DataLoader:
+        """Constructs a PyTorch DataLoader for the requested split."""
+        split_name = split.value if isinstance(split, DatasetSplit) else str(split).lower()
+        if split_name in ("train", "training"):
+            ds = self.train_dataset
+        elif split_name in ("val", "validation", "valid"):
+            ds = self.val_dataset
+        elif split_name in ("test", "testing"):
+            ds = self.test_dataset
+        else:
+            raise ValueError(f"Unknown dataset split '{split}'. Expected 'train', 'val', or 'test'.")
+
+        return DataLoader(
+            ds,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            pin_memory=False,
+        )
+
+
 class SpatioTemporalDataset(BaseModel):
     """
     Full structured spatio-temporal dataset with chronological splits,
@@ -108,6 +332,7 @@ class SpatioTemporalDataset(BaseModel):
     @property
     def num_nodes(self) -> int:
         return self.adjacency.num_nodes
+
 
 
 class TemporalDatasetSlicer:
@@ -208,16 +433,20 @@ class TemporalDatasetSlicer:
 
     def slice_dataset(
         self,
-        contract: Union[TemporalGraphDatasetContract, List[TemporalGraphSnapshot]],
-    ) -> SpatioTemporalDataset:
+        contract: Union[TemporalGraphDatasetContract, List[TemporalGraphSnapshot], Any],
+    ) -> Union[SpatioTemporalDataset, CompactSpatioTemporalDataset]:
         """
-        Main pipeline: Slices snapshots into supervised sequences, splits chronologically,
-        and normalizes features/targets using TRAIN statistics only.
+        Main pipeline: Slices snapshots or compact benchmark into supervised sequences,
+        splits chronologically, and normalizes features/targets using TRAIN statistics only.
         """
+        if hasattr(contract, "features") and hasattr(contract, "adjacency_matrix"):
+            return self.slice_compact_dataset(contract)
+
         snapshots = contract.snapshots if isinstance(contract, TemporalGraphDatasetContract) else contract
         
         # 1. Sort snapshots chronologically
         sorted_snaps = sorted(snapshots, key=lambda s: s.start_time)
+
         
         if not sorted_snaps:
             empty_adj = AdjacencyData(node_ids=[], node_to_idx={}, num_nodes=0)
@@ -656,3 +885,223 @@ class TemporalDatasetSlicer:
                 )
             )
         return samples
+
+    def slice_compact_dataset(
+        self,
+        compact_data: Any,
+    ) -> CompactSpatioTemporalDataset:
+        """
+        Slices compact benchmark dataset into train/val/test splits without duplicating
+        overlapping sliding windows. Fits normalization scalers strictly on TRAIN samples.
+        """
+        features_np = compact_data.features.astype(np.float32)  # [T, N, F]
+        targets_np = compact_data.targets.astype(np.float32)    # [T, N, Target_F]
+
+        T_total = compact_data.num_timesteps
+        N_nodes = compact_data.num_nodes
+
+        max_h = max(h[1] for h in self.forecast_horizons) if self.forecast_horizons else 1
+        required_len = self.input_sequence_length + max_h
+
+        total_samples = max(0, T_total - required_len + 1)
+
+        if total_samples == 0:
+            train_count, val_count, test_count = 0, 0, 0
+        elif total_samples == 1:
+            train_count = 1 if self.train_ratio > 0 else 0
+            val_count = 1 if (train_count == 0 and self.val_ratio > 0) else 0
+            test_count = 1 if (train_count == 0 and val_count == 0) else 0
+        elif self.train_ratio >= 0.999:
+            train_count, val_count, test_count = total_samples, 0, 0
+        elif self.val_ratio >= 0.999:
+            train_count, val_count, test_count = 0, total_samples, 0
+        elif self.test_ratio >= 0.999:
+            train_count, val_count, test_count = 0, 0, total_samples
+        else:
+            train_count = int(total_samples * self.train_ratio)
+            val_count = int(total_samples * self.val_ratio)
+            if self.train_ratio > 0 and train_count == 0 and total_samples > 0:
+                train_count = 1
+            if self.val_ratio > 0 and val_count == 0 and (total_samples - train_count) > 1:
+                val_count = 1
+            test_count = max(0, total_samples - train_count - val_count)
+
+        train_indices = list(range(0, train_count))
+        val_indices = list(range(train_count, train_count + val_count))
+        test_indices = list(range(train_count + val_count, total_samples))
+
+        # Fit Scalers strictly on TRAIN split samples
+        feature_names = compact_data.feature_names
+        target_names = compact_data.target_names
+
+        f_mean, f_std, f_min, f_max = {}, {}, {}, {}
+        for f_idx, fname in enumerate(feature_names):
+            if compact_data.feature_mask[f_idx] and train_count > 0:
+                # Collect valid observations across all training input windows
+                train_vals = np.concatenate([
+                    features_np[i : i + self.input_sequence_length, :, f_idx].ravel()
+                    for i in train_indices
+                ])
+                m = float(np.mean(train_vals))
+                s = float(np.std(train_vals, ddof=1)) if len(train_vals) > 1 else 0.0
+                f_mean[fname] = round(m, 4)
+                f_std[fname] = round(s, 4) if s > 1e-6 else 1.0
+                f_min[fname] = round(float(np.min(train_vals)), 4)
+                f_max[fname] = round(float(np.max(train_vals)), 4)
+            else:
+                f_mean[fname] = 0.0
+                f_std[fname] = 1.0
+                f_min[fname] = 0.0
+                f_max[fname] = 1.0
+
+        feature_scaler = NormalizationParams(
+            feature_names=feature_names,
+            mean=f_mean,
+            std=f_std,
+            min_val=f_min,
+            max_val=f_max,
+            method=self.normalization_method,
+        )
+
+        t_mean, t_std, t_min, t_max = {}, {}, {}, {}
+        for t_idx, tname in enumerate(target_names):
+            if compact_data.target_mask[t_idx] and train_count > 0:
+                # Collect valid target observations across all training horizons
+                train_tgt_vals = np.concatenate([
+                    np.concatenate([
+                        targets_np[i + self.input_sequence_length - 1 + h_step, :, t_idx].ravel()
+                        for _, h_step in self.forecast_horizons
+                    ])
+                    for i in train_indices
+                ])
+                m = float(np.mean(train_tgt_vals))
+                s = float(np.std(train_tgt_vals, ddof=1)) if len(train_tgt_vals) > 1 else 0.0
+                t_mean[tname] = round(m, 4)
+                t_std[tname] = round(s, 4) if s > 1e-6 else 1.0
+                t_min[tname] = round(float(np.min(train_tgt_vals)), 4)
+                t_max[tname] = round(float(np.max(train_tgt_vals)), 4)
+            else:
+                t_mean[tname] = 0.0
+                t_std[tname] = 1.0
+                t_min[tname] = 0.0
+                t_max[tname] = 1.0
+
+        target_scaler = NormalizationParams(
+            feature_names=target_names,
+            mean=t_mean,
+            std=t_std,
+            min_val=t_min,
+            max_val=t_max,
+            method=self.normalization_method,
+        )
+
+        # Pre-normalize compact tensors in float32
+        norm_features_np = np.zeros_like(features_np, dtype=np.float32)
+        for f_idx, fname in enumerate(feature_names):
+            if compact_data.feature_mask[f_idx]:
+                m = feature_scaler.mean.get(fname, 0.0)
+                s = feature_scaler.std.get(fname, 1.0)
+                norm_features_np[:, :, f_idx] = (features_np[:, :, f_idx] - m) / (s if s > 1e-6 else 1.0)
+
+        norm_targets_np = np.zeros_like(targets_np, dtype=np.float32)
+        for t_idx, tname in enumerate(target_names):
+            if compact_data.target_mask[t_idx]:
+                m = target_scaler.mean.get(tname, 0.0)
+                s = target_scaler.std.get(tname, 1.0)
+                norm_targets_np[:, :, t_idx] = (targets_np[:, :, t_idx] - m) / (s if s > 1e-6 else 1.0)
+
+        # Convert to PyTorch Tensors
+        norm_features_tensor = torch.from_numpy(norm_features_np)
+        norm_targets_tensor = torch.from_numpy(norm_targets_np)
+        raw_features_tensor = torch.from_numpy(features_np)
+        raw_targets_tensor = torch.from_numpy(targets_np)
+        feature_mask_tensor = torch.from_numpy(compact_data.feature_mask.astype(bool))
+        target_mask_tensor = torch.from_numpy(compact_data.target_mask.astype(bool))
+
+        train_split = LazySpatioTemporalSplit(
+            norm_features=norm_features_tensor,
+            norm_targets=norm_targets_tensor,
+            raw_features=raw_features_tensor,
+            raw_targets=raw_targets_tensor,
+            feature_mask=feature_mask_tensor,
+            target_mask=target_mask_tensor,
+            input_sequence_length=self.input_sequence_length,
+            forecast_horizons=self.forecast_horizons,
+            sample_start_indices=train_indices,
+            split=DatasetSplit.TRAIN,
+            feature_names=feature_names,
+            target_names=target_names,
+            node_ids=compact_data.node_ids,
+            start_time_offset=0.0,
+            window_seconds=compact_data.window_seconds,
+        )
+
+        val_split = LazySpatioTemporalSplit(
+            norm_features=norm_features_tensor,
+            norm_targets=norm_targets_tensor,
+            raw_features=raw_features_tensor,
+            raw_targets=raw_targets_tensor,
+            feature_mask=feature_mask_tensor,
+            target_mask=target_mask_tensor,
+            input_sequence_length=self.input_sequence_length,
+            forecast_horizons=self.forecast_horizons,
+            sample_start_indices=val_indices,
+            split=DatasetSplit.VAL,
+            feature_names=feature_names,
+            target_names=target_names,
+            node_ids=compact_data.node_ids,
+            start_time_offset=0.0,
+            window_seconds=compact_data.window_seconds,
+        )
+
+        test_split = LazySpatioTemporalSplit(
+            norm_features=norm_features_tensor,
+            norm_targets=norm_targets_tensor,
+            raw_features=raw_features_tensor,
+            raw_targets=raw_targets_tensor,
+            feature_mask=feature_mask_tensor,
+            target_mask=target_mask_tensor,
+            input_sequence_length=self.input_sequence_length,
+            forecast_horizons=self.forecast_horizons,
+            sample_start_indices=test_indices,
+            split=DatasetSplit.TEST,
+            feature_names=feature_names,
+            target_names=target_names,
+            node_ids=compact_data.node_ids,
+            start_time_offset=0.0,
+            window_seconds=compact_data.window_seconds,
+        )
+
+        adjacency = AdjacencyData(
+            node_ids=compact_data.node_ids,
+            node_to_idx=compact_data.node_to_idx,
+            num_nodes=compact_data.num_nodes,
+            edge_index=compact_data.edge_index,
+            edge_weights=compact_data.edge_weights,
+            adjacency_matrix=[list(row) for row in compact_data.adjacency_matrix],
+            has_unobserved_gaps={},
+        )
+
+        return CompactSpatioTemporalDataset(
+            dataset_id=f"ST_DS_{compact_data.dataset_id}",
+            input_sequence_length=self.input_sequence_length,
+            forecast_horizons=[h[0] for h in self.forecast_horizons],
+            feature_names=feature_names,
+            target_names=target_names,
+            adjacency=adjacency,
+            feature_scaler=feature_scaler,
+            target_scaler=target_scaler,
+            train_dataset=train_split,
+            val_dataset=val_split,
+            test_dataset=test_split,
+            metadata={
+                "total_timesteps": T_total,
+                "num_nodes": N_nodes,
+                "train_ratio": self.train_ratio,
+                "val_ratio": self.val_ratio,
+                "test_ratio": self.test_ratio,
+                "normalization_method": self.normalization_method,
+                "compact_mode": True,
+            },
+        )
+

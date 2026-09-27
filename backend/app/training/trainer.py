@@ -1,9 +1,3 @@
-"""
-ChronoEye Infinity - ST-GNN Training & Evaluation Pipeline.
-Manages batch tensor collation, masked loss optimization, early stopping,
-checkpoint saving/loading, and multi-horizon test evaluation.
-"""
-
 import os
 import json
 import time
@@ -11,13 +5,41 @@ import copy
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union, Sequence
 from pydantic import BaseModel, Field
+from torch.utils.data import Dataset, DataLoader
 
 from app.models.stgnn.config import STGNNConfig
 from app.models.stgnn.model import SpatioTemporalGNN
 from app.models.stgnn.loss import MaskedLoss, compute_all_metrics
 from app.graph.temporal_dataset_slicer import SpatioTemporalDataset, SpatioTemporalSample
+
+
+class _LegacySampleDataset(Dataset):
+    """Fallback Dataset wrapper for legacy SpatioTemporalSample lists."""
+    def __init__(self, samples: Sequence[SpatioTemporalSample], use_normalized: bool = True):
+        self.samples = samples
+        self.use_normalized = use_normalized
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        s = self.samples[idx]
+        x_data = s.x_normalized if self.use_normalized else s.x_raw
+        y_data = s.y_normalized if self.use_normalized else s.y_raw
+
+        x = torch.tensor(
+            [[[val if val is not None else 0.0 for val in node] for node in step] for step in x_data],
+            dtype=torch.float32,
+        )
+        x_mask = torch.tensor(s.x_mask, dtype=torch.bool)
+        y = torch.tensor(
+            [[[val if val is not None else 0.0 for val in node] for node in step] for step in y_data],
+            dtype=torch.float32,
+        )
+        y_mask = torch.tensor(s.y_mask, dtype=torch.bool)
+        return x, x_mask, y, y_mask
 
 
 class TrainingResult(BaseModel):
@@ -40,7 +62,7 @@ class TrainingResult(BaseModel):
 
 class STGNNTrainer:
     """
-    PyTorch Trainer for Spatio-Temporal Graph Neural Networks.
+    PyTorch Trainer for Spatio-Temporal Graph Neural Networks with true mini-batching on GPU.
     """
 
     def __init__(
@@ -49,17 +71,44 @@ class STGNNTrainer:
         config: Optional[STGNNConfig] = None,
         loss_type: str = "mae",
         checkpoint_dir: Optional[str] = None,
+        device: Optional[Union[torch.device, str]] = None,
     ):
         self.model = model
         self.config = config or getattr(model, "config", STGNNConfig())
-        self.device = torch.device(self.config.device if torch.cuda.is_available() and self.config.device != "cpu" else "cpu")
+        if device is not None:
+            self.device = torch.device(device)
+        else:
+            self.device = torch.device(self.config.device if torch.cuda.is_available() and self.config.device != "cpu" else "cpu")
         self.model.to(self.device)
         self.loss_fn = MaskedLoss(loss_type=loss_type)
         self.checkpoint_dir = checkpoint_dir or "checkpoints/stgnn"
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
+    def _get_dataloader(
+        self,
+        dataset: Any,
+        split: str,
+        batch_size: int = 16,
+        shuffle: bool = False,
+    ) -> DataLoader:
+        """Constructs DataLoader for given dataset and split."""
+        if hasattr(dataset, "get_dataloader"):
+            return dataset.get_dataloader(split=split, batch_size=batch_size, shuffle=shuffle)
+
+        # Check for proxy or list samples
+        samples = getattr(dataset, f"{split}_samples", [])
+        if hasattr(samples, "split_dataset"):
+            return DataLoader(samples.split_dataset, batch_size=batch_size, shuffle=shuffle)
+
+        if len(samples) > 0:
+            return DataLoader(_LegacySampleDataset(samples), batch_size=batch_size, shuffle=shuffle)
+
+        # Empty dataset fallback
+        empty_ds = _LegacySampleDataset([])
+        return DataLoader(empty_ds, batch_size=batch_size, shuffle=False)
+
     def _dataset_to_tensors(
-        self, samples: List[SpatioTemporalSample], use_normalized: bool = True
+        self, samples: Sequence[SpatioTemporalSample], use_normalized: bool = True
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Converts list of SpatioTemporalSample into 4D PyTorch tensors:
@@ -68,7 +117,7 @@ class STGNNTrainer:
         Y: [B, H, N, T_target]
         Y_mask: [B, H, N, T_target]
         """
-        if not samples:
+        if not samples or len(samples) == 0:
             return (
                 torch.empty((0, self.config.input_sequence_length, 1, self.config.input_dim)),
                 torch.empty((0, self.config.input_sequence_length, 1, self.config.input_dim)),
@@ -83,7 +132,6 @@ class STGNNTrainer:
             x_data = s.x_normalized if use_normalized else s.x_raw
             y_data = s.y_normalized if use_normalized else s.y_raw
 
-            # Convert None to 0.0 for tensor conversion
             x_tensor = torch.tensor(
                 [[[val if val is not None else 0.0 for val in node] for node in step] for step in x_data],
                 dtype=torch.float32,
@@ -110,7 +158,7 @@ class STGNNTrainer:
 
     def train(
         self,
-        dataset: SpatioTemporalDataset,
+        dataset: Any,
         epochs: int = 30,
         batch_size: int = 16,
         patience: int = 8,
@@ -118,7 +166,8 @@ class STGNNTrainer:
         save_checkpoint_name: str = "best_stgnn_model.pt",
     ) -> TrainingResult:
         """
-        Trains ST-GNN using chronological train/val splits with early stopping.
+        Trains ST-GNN using chronological train/val splits with early stopping and mini-batch streaming.
+        Only mini-batches are transferred to GPU, ensuring constant memory footprint.
         """
         start_time = time.time()
         learning_rate = lr or self.config.learning_rate
@@ -128,12 +177,10 @@ class STGNNTrainer:
             weight_decay=self.config.weight_decay,
         )
 
-        # Build Tensors
-        x_train, x_mask_train, y_train, y_mask_train = self._dataset_to_tensors(dataset.train_samples)
-        x_val, x_mask_val, y_val, y_mask_val = self._dataset_to_tensors(dataset.val_samples)
-        x_test, x_mask_test, y_test, y_mask_test = self._dataset_to_tensors(dataset.test_samples)
+        train_loader = self._get_dataloader(dataset, "train", batch_size=batch_size, shuffle=True)
+        val_loader = self._get_dataloader(dataset, "val", batch_size=batch_size, shuffle=False)
 
-        # Graph Adjacency Matrix
+        # Graph Adjacency Matrix on device
         adj_matrix = torch.tensor(dataset.adjacency.adjacency_matrix, dtype=torch.float32).to(self.device)
 
         history = {"train_loss": [], "val_loss": []}
@@ -142,21 +189,16 @@ class STGNNTrainer:
         patience_counter = 0
         best_model_weights = None
 
-        num_train_samples = x_train.size(0)
-
         for epoch in range(1, epochs + 1):
             self.model.train()
             epoch_loss = 0.0
             num_batches = 0
 
-            # Batch iteration
-            indices = list(range(0, num_train_samples, batch_size))
-            for start_idx in indices:
-                end_idx = min(start_idx + batch_size, num_train_samples)
-                bx = x_train[start_idx:end_idx]
-                bx_mask = x_mask_train[start_idx:end_idx]
-                by = y_train[start_idx:end_idx]
-                by_mask = y_mask_train[start_idx:end_idx]
+            for bx, bx_mask, by, by_mask in train_loader:
+                bx = bx.to(self.device)
+                bx_mask = bx_mask.to(self.device)
+                by = by.to(self.device)
+                by_mask = by_mask.to(self.device)
 
                 optimizer.zero_grad()
                 pred = self.model(bx, adj_matrix, feature_mask=bx_mask)
@@ -172,16 +214,24 @@ class STGNNTrainer:
             avg_train_loss = round(epoch_loss / max(1, num_batches), 4)
             history["train_loss"].append(avg_train_loss)
 
-            # Validation Evaluation
+            # Validation Evaluation (batch-by-batch)
             self.model.eval()
+            val_loss_sum = 0.0
+            val_batches = 0
             with torch.no_grad():
-                if x_val.size(0) > 0:
-                    val_pred = self.model(x_val, adj_matrix, feature_mask=x_mask_val)
-                    val_loss_val = self.loss_fn(val_pred, y_val, mask=y_mask_val).item()
-                else:
-                    val_loss_val = avg_train_loss
+                for bx, bx_mask, by, by_mask in val_loader:
+                    bx = bx.to(self.device)
+                    bx_mask = bx_mask.to(self.device)
+                    by = by.to(self.device)
+                    by_mask = by_mask.to(self.device)
 
-            val_loss_val = round(float(val_loss_val), 4)
+                    val_pred = self.model(bx, adj_matrix, feature_mask=bx_mask)
+                    v_loss = self.loss_fn(val_pred, by, mask=by_mask)
+                    if not torch.isnan(v_loss):
+                        val_loss_sum += v_loss.item()
+                        val_batches += 1
+
+            val_loss_val = round(val_loss_sum / max(1, val_batches), 4) if val_batches > 0 else avg_train_loss
             history["val_loss"].append(val_loss_val)
 
             # Model Selection via Validation Loss
@@ -201,14 +251,11 @@ class STGNNTrainer:
             checkpoint_path = os.path.join(self.checkpoint_dir, save_checkpoint_name)
             torch.save(best_model_weights, checkpoint_path)
 
-        # Final Evaluation on TEST SET ONLY
+        # Final Evaluation on TEST SET ONLY (mini-batch evaluation)
         test_metrics = self.evaluate_all_models(
             dataset=dataset,
-            x_test=x_test,
-            x_mask_test=x_mask_test,
-            y_test=y_test,
-            y_mask_test=y_mask_test,
             adj_matrix=adj_matrix,
+            batch_size=batch_size,
         )
 
         total_time = round(time.time() - start_time, 2)
@@ -235,34 +282,23 @@ class STGNNTrainer:
 
     def evaluate_all_models(
         self,
-        dataset: SpatioTemporalDataset,
+        dataset: Any,
         x_test: Optional[torch.Tensor] = None,
         x_mask_test: Optional[torch.Tensor] = None,
         y_test: Optional[torch.Tensor] = None,
         y_mask_test: Optional[torch.Tensor] = None,
         adj_matrix: Optional[torch.Tensor] = None,
+        batch_size: int = 16,
     ) -> Dict[str, Any]:
         """
         Evaluates ST-GNN and baseline models on the test split.
-        Returns: {model_name: {horizon: {target_name: {mae, rmse, mape}}}}
+        Mini-batches are streamed to GPU and collected on CPU for metric calculation.
         """
-        if x_test is None or y_test is None:
-            x_test, x_mask_test, y_test, y_mask_test = self._dataset_to_tensors(dataset.test_samples)
         if adj_matrix is None:
             adj_matrix = torch.tensor(dataset.adjacency.adjacency_matrix, dtype=torch.float32).to(self.device)
 
-        results: Dict[str, Any] = {}
-        if x_test.size(0) == 0:
-            return results
-
-        self.model.eval()
-        with torch.no_grad():
-            stgnn_pred = self.model(x_test, adj_matrix, feature_mask=x_mask_test)
-
-        # Baseline Predictions
         from app.training.baselines import PersistenceBaseline, MovingAverageBaseline, LinearRegressionBaseline
 
-        # Map target indices
         feat_to_target = []
         for tname in dataset.target_names:
             if tname in dataset.feature_names:
@@ -271,40 +307,102 @@ class STGNNTrainer:
                 feat_to_target.append(0)
 
         pers_baseline = PersistenceBaseline()
-        pers_pred = pers_baseline.predict(
-            x_test, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target
-        )
-
         ma_baseline = MovingAverageBaseline()
-        ma_pred = ma_baseline.predict(
-            x_test, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target, x_mask=x_mask_test
-        )
-
         lr_baseline = LinearRegressionBaseline(alpha=1.0)
-        x_tr, _, y_tr, _ = self._dataset_to_tensors(dataset.train_samples)
-        if x_tr.size(0) > 0 and y_tr.size(0) > 0:
-            lr_baseline.fit(x_tr, y_tr)
-        lr_pred = lr_baseline.predict(x_test, self.config.num_horizons, self.config.output_dim)
 
-        # Map raw vs denormalized targets if needed, compute metrics on test set
-        models_preds = {
-            "ST-GNN": stgnn_pred,
-            "Persistence": pers_pred,
-            "Moving_Average": ma_pred,
-            "Linear_Regression": lr_pred,
-        }
+        # If x_test is provided directly (legacy path)
+        if x_test is not None and y_test is not None:
+            if x_test.size(0) == 0:
+                return {}
+            self.model.eval()
+            with torch.no_grad():
+                stgnn_pred = self.model(x_test, adj_matrix, feature_mask=x_mask_test).cpu()
+            pers_pred = pers_baseline.predict(
+                x_test, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target
+            ).cpu()
+            ma_pred = ma_baseline.predict(
+                x_test, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target, x_mask=x_mask_test
+            ).cpu()
+            x_tr, _, y_tr, _ = self._dataset_to_tensors(dataset.train_samples)
+            if x_tr.size(0) > 0 and y_tr.size(0) > 0:
+                lr_baseline.fit(x_tr, y_tr)
+            lr_pred = lr_baseline.predict(x_test, self.config.num_horizons, self.config.output_dim).cpu()
 
+            models_preds = {
+                "ST-GNN": stgnn_pred,
+                "Persistence": pers_pred,
+                "Moving_Average": ma_pred,
+                "Linear_Regression": lr_pred,
+            }
+            y_test_cpu = y_test.cpu()
+            y_mask_test_cpu = y_mask_test.cpu() if y_mask_test is not None else None
+        else:
+            # Memory-safe DataLoader streaming evaluation
+            test_loader = self._get_dataloader(dataset, "test", batch_size=batch_size, shuffle=False)
+            train_loader = self._get_dataloader(dataset, "train", batch_size=batch_size, shuffle=False)
+
+            # Fit Ridge on training batches
+            if len(dataset.train_samples) > 0:
+                lr_baseline.fit_loader(train_loader, device=torch.device("cpu"))
+
+            stgnn_preds_list = []
+            pers_preds_list = []
+            ma_preds_list = []
+            lr_preds_list = []
+            y_test_list = []
+            y_mask_test_list = []
+
+            self.model.eval()
+            with torch.no_grad():
+                for bx, bx_mask, by, by_mask in test_loader:
+                    bx_dev = bx.to(self.device)
+                    bx_mask_dev = bx_mask.to(self.device)
+                    pred_batch = self.model(bx_dev, adj_matrix, feature_mask=bx_mask_dev)
+                    stgnn_preds_list.append(pred_batch.cpu())
+
+                    pers_batch = pers_baseline.predict(
+                        bx, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target
+                    )
+                    pers_preds_list.append(pers_batch.cpu())
+
+                    ma_batch = ma_baseline.predict(
+                        bx, self.config.num_horizons, self.config.output_dim, feature_to_target_map=feat_to_target, x_mask=bx_mask
+                    )
+                    ma_preds_list.append(ma_batch.cpu())
+
+                    lr_batch = lr_baseline.predict(
+                        bx, self.config.num_horizons, self.config.output_dim
+                    )
+                    lr_preds_list.append(lr_batch.cpu())
+
+                    y_test_list.append(by.cpu())
+                    y_mask_test_list.append(by_mask.cpu())
+
+            if not stgnn_preds_list:
+                return {}
+
+            models_preds = {
+                "ST-GNN": torch.cat(stgnn_preds_list, dim=0),
+                "Persistence": torch.cat(pers_preds_list, dim=0),
+                "Moving_Average": torch.cat(ma_preds_list, dim=0),
+                "Linear_Regression": torch.cat(lr_preds_list, dim=0),
+            }
+            y_test_cpu = torch.cat(y_test_list, dim=0)
+            y_mask_test_cpu = torch.cat(y_mask_test_list, dim=0)
+
+        results: Dict[str, Any] = {}
         for m_name, pred_tensor in models_preds.items():
             results[m_name] = {}
             for h_idx, h_name in enumerate(self.config.forecast_horizons):
                 results[m_name][h_name] = {}
                 for t_idx, t_name in enumerate(dataset.target_names):
-                    if t_idx < pred_tensor.size(-1) and t_idx < y_test.size(-1):
+                    if t_idx < pred_tensor.size(-1) and t_idx < y_test_cpu.size(-1):
                         p_slice = pred_tensor[:, h_idx, :, t_idx]
-                        y_slice = y_test[:, h_idx, :, t_idx]
-                        m_slice = y_mask_test[:, h_idx, :, t_idx]
-                        
+                        y_slice = y_test_cpu[:, h_idx, :, t_idx]
+                        m_slice = y_mask_test_cpu[:, h_idx, :, t_idx] if y_mask_test_cpu is not None else None
+
                         metrics = compute_all_metrics(p_slice, y_slice, mask=m_slice)
                         results[m_name][h_name][t_name] = metrics
 
         return results
+

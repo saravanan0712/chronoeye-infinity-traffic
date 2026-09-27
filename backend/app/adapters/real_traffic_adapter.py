@@ -9,7 +9,8 @@ import csv
 import math
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
 
 from app.graph.temporal_snapshot_schema import (
     TemporalGraphSnapshot,
@@ -20,11 +21,45 @@ from app.graph.temporal_snapshot_schema import (
 )
 
 
+@dataclass
+class CompactTrafficDataset:
+    """
+    Compact numerical representation of spatio-temporal traffic benchmarks.
+    Stores dense [T, N, F] feature arrays, [T, N, Target_F] target arrays,
+    and static graph adjacency without generating millions of Python snapshot objects.
+    """
+    dataset_id: str
+    features: np.ndarray               # [T, N, F] float32
+    feature_mask: np.ndarray           # [F] bool or [T, N, F] bool
+    targets: np.ndarray                # [T, N, Target_F] float32
+    target_mask: np.ndarray            # [Target_F] bool or [T, N, Target_F] bool
+    adjacency_matrix: np.ndarray       # [N, N] float32
+    edge_index: List[List[int]]        # [2, num_edges]
+    edge_weights: List[float]          # [num_edges]
+    node_ids: List[str]
+    node_to_idx: Dict[str, int]
+    num_nodes: int
+    num_timesteps: int
+    feature_names: List[str]
+    target_names: List[str]
+    forecast_horizons: List[str] = field(default_factory=lambda: ["PLUS_5MIN", "PLUS_10MIN", "PLUS_15MIN"])
+    window_seconds: float = 300.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def node_count(self) -> int:
+        return self.num_nodes
+
+    @property
+    def edge_count(self) -> int:
+        return len(self.edge_weights)
+
+
 class RealTrafficDatasetAdapter:
     """
     Adapter for real-world public traffic benchmarks (Caltrans PeMS08).
     Converts multi-sensor time-series arrays and distance connectivity tables
-    into standardized ChronoEye TemporalGraphDatasetContract.
+    into standardized ChronoEye TemporalGraphDatasetContract or CompactTrafficDataset.
     """
 
     FEATURE_NAMES = [
@@ -48,6 +83,142 @@ class RealTrafficDatasetAdapter:
     FREE_FLOW_SPEED_MPH = 65.0  # Standard California highway free-flow speed
 
     @classmethod
+    def load_pems08_compact(
+        cls,
+        npz_path: str = "data/research/pems08/PEMS08.npz",
+        csv_path: str = "data/research/pems08/PEMS08.csv",
+        num_timesteps: Optional[int] = None,
+        num_nodes: Optional[int] = None,
+        start_step: int = 0,
+        window_seconds: float = 300.0,
+    ) -> Tuple[CompactTrafficDataset, Dict[str, Any]]:
+        """
+        Loads the PeMS08 dataset directly into a memory-efficient compact representation.
+        Zero Python snapshot object proliferation.
+        """
+        npz_file = Path(npz_path)
+        if not npz_file.exists():
+            raise FileNotFoundError(f"PeMS08 dataset file not found at {npz_path}")
+
+        raw_data = np.load(npz_file)
+        full_tensor = raw_data["data"]  # [T, N, 3]: flow, occupancy, speed
+        total_timesteps, total_nodes, num_channels = full_tensor.shape
+
+        n_steps = num_timesteps if num_timesteps is not None else total_timesteps
+        n_nodes = num_nodes if num_nodes is not None else total_nodes
+
+        tensor_slice = full_tensor[start_step : start_step + n_steps, :n_nodes, :].astype(np.float32)
+        node_ids = [f"PEMS08_SENSOR_{i:03d}" for i in range(n_nodes)]
+        node_to_idx = {nid: i for i, nid in enumerate(node_ids)}
+
+        # 1. Load Topology and Connectivity Graph from CSV once
+        adj_matrix = np.zeros((n_nodes, n_nodes), dtype=np.float32)
+        edges_list: List[Tuple[int, int, float]] = []
+
+        if csv_path and Path(csv_path).exists():
+            with open(csv_path, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    u = int(row["from"])
+                    v = int(row["to"])
+                    dist = float(row["cost"])
+                    if u < n_nodes and v < n_nodes:
+                        edges_list.append((u, v, dist))
+                        adj_matrix[u, v] = math.exp(-((dist / 1000.0) ** 2))
+
+        for u, v, dist in edges_list:
+            if adj_matrix[v, u] == 0:
+                adj_matrix[v, u] = adj_matrix[u, v]
+
+        src_indices = [u for u, v, _ in edges_list]
+        dst_indices = [v for u, v, _ in edges_list]
+        edge_weights = [float(adj_matrix[u, v]) for u, v, _ in edges_list]
+
+        # 2. Build Compact Features Matrix [T, N, 8]
+        raw_flow = tensor_slice[:, :, 0]
+        raw_occ = tensor_slice[:, :, 1]
+        raw_speed = tensor_slice[:, :, 2]
+
+        features = np.zeros((n_steps, n_nodes, 8), dtype=np.float32)
+        features[:, :, 0] = raw_flow                    # 0: vehicle_count
+        features[:, :, 1] = raw_flow                    # 1: flow_rate
+        features[:, :, 2] = raw_occ * 100.0             # 2: density
+        features[:, :, 3] = raw_speed                   # 3: average_speed
+        features[:, :, 4] = 0.0                         # 4: queue_length (unobserved)
+
+        # 5: congestion
+        congestion = np.where(
+            raw_speed > 0,
+            np.clip((1.0 - (raw_speed / cls.FREE_FLOW_SPEED_MPH)) * 100.0, 0.0, 100.0),
+            100.0,
+        ).astype(np.float32)
+        features[:, :, 5] = congestion
+        features[:, :, 6] = 0.0                         # 6: incoming_flow (unobserved)
+        features[:, :, 7] = 0.0                         # 7: outgoing_flow (unobserved)
+
+        feature_mask = np.array([True, True, True, True, False, True, False, False], dtype=bool)
+
+        # 3. Build Compact Targets Matrix [T, N, 4]
+        targets = np.zeros((n_steps, n_nodes, 4), dtype=np.float32)
+        targets[:, :, 0] = raw_flow                     # 0: flow_rate
+        targets[:, :, 1] = raw_occ * 100.0              # 1: density
+        targets[:, :, 2] = congestion                   # 2: congestion
+        targets[:, :, 3] = 0.0                          # 3: travel_time (unobserved)
+
+        target_mask = np.array([True, True, True, False], dtype=bool)
+
+        metadata = {
+            "dataset_name": "Caltrans PeMS08",
+            "source_provenance": "California Department of Transportation (District 8 San Bernardino Freeway Network)",
+            "official_zenodo_doi": "10.5281/zenodo.7816008",
+            "file_npz": str(npz_path),
+            "file_csv": str(csv_path),
+            "total_available_timesteps": total_timesteps,
+            "total_available_nodes": total_nodes,
+            "loaded_timesteps": n_steps,
+            "loaded_nodes": n_nodes,
+            "temporal_resolution_seconds": window_seconds,
+            "feature_mapping": {
+                "PEMS08_channel_0": "flow_rate (veh/5min) -> ChronoEye flow_rate",
+                "PEMS08_channel_1": "occupancy ([0, 1]) -> ChronoEye density (occ * 100)",
+                "PEMS08_channel_2": "speed (mph) -> ChronoEye average_speed",
+                "derived_congestion": "max(0, 1 - speed/65.0)*100 -> ChronoEye congestion",
+                "unobserved_fields": ["queue_length", "incoming_flow", "outgoing_flow"],
+            },
+            "target_availability": {
+                "flow_rate": True,
+                "density": True,
+                "congestion": True,
+                "travel_time": False,
+            },
+            "node_mapping": {node_ids[i]: i for i in range(n_nodes)},
+            "total_edges": len(edges_list),
+            "compact_mode": True,
+        }
+
+        compact_dataset = CompactTrafficDataset(
+            dataset_id="DS_PEMS08_San_Bernardino_Compact",
+            features=features,
+            feature_mask=feature_mask,
+            targets=targets,
+            target_mask=target_mask,
+            adjacency_matrix=adj_matrix,
+            edge_index=[src_indices, dst_indices],
+            edge_weights=edge_weights,
+            node_ids=node_ids,
+            node_to_idx=node_to_idx,
+            num_nodes=n_nodes,
+            num_timesteps=n_steps,
+            feature_names=cls.FEATURE_NAMES,
+            target_names=cls.TARGET_NAMES,
+            forecast_horizons=["PLUS_5MIN", "PLUS_10MIN", "PLUS_15MIN"],
+            window_seconds=window_seconds,
+            metadata=metadata,
+        )
+
+        return compact_dataset, metadata
+
+    @classmethod
     def load_pems08(
         cls,
         npz_path: str = "data/research/pems08/PEMS08.npz",
@@ -56,14 +227,23 @@ class RealTrafficDatasetAdapter:
         num_nodes: Optional[int] = None,
         start_step: int = 0,
         window_seconds: float = 300.0,  # 5-minute sampling
-    ) -> Tuple[TemporalGraphDatasetContract, Dict[str, Any]]:
+        compact: bool = False,
+    ) -> Tuple[Union[TemporalGraphDatasetContract, CompactTrafficDataset], Dict[str, Any]]:
         """
         Loads the official PeMS08 dataset.
-        npz_path: path to PEMS08.npz containing 'data' array [T, N, 3]
-        csv_path: path to PEMS08.csv containing (from, to, cost) connectivity
-        num_timesteps: subset of timesteps to process (default: all or 2016 steps = 7 days)
-        num_nodes: subset of nodes to process (default: all 170 nodes)
+        If compact=True, delegates to load_pems08_compact for memory efficiency.
+        Otherwise creates standard TemporalGraphDatasetContract.
         """
+        if compact:
+            return cls.load_pems08_compact(
+                npz_path=npz_path,
+                csv_path=csv_path,
+                num_timesteps=num_timesteps,
+                num_nodes=num_nodes,
+                start_step=start_step,
+                window_seconds=window_seconds,
+            )
+
         npz_file = Path(npz_path)
         if not npz_file.exists():
             raise FileNotFoundError(f"PeMS08 dataset file not found at {npz_path}")
@@ -220,3 +400,4 @@ class RealTrafficDatasetAdapter:
         }
 
         return contract, metadata
+

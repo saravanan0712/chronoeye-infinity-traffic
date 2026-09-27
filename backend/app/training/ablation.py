@@ -129,11 +129,12 @@ class AblationStudyRunner:
 
     @staticmethod
     def run_all_ablations(
-        dataset: SpatioTemporalDataset,
-        contract: Optional[TemporalGraphDatasetContract] = None,
+        dataset: Any,
+        contract: Optional[Any] = None,
         epochs: int = 15,
         checkpoint_dir: str = "checkpoints/ablations",
     ) -> Dict[str, AblationExperimentResult]:
+
         """
         Runs Ablations A, B, C, D on the dataset.
         """

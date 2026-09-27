@@ -1,0 +1,35 @@
+{
+  "feature_means": {
+    "vehicle_count": 220.6799,
+    "flow_rate": 220.6799,
+    "density": 6.2576,
+    "average_speed": 63.9626,
+    "queue_length": 0.0,
+    "congestion": 3.6415,
+    "incoming_flow": 0.0,
+    "outgoing_flow": 0.0
+  },
+  "feature_stds": {
+    "vehicle_count": 145.3869,
+    "flow_rate": 145.3869,
+    "density": 4.4065,
+    "average_speed": 6.2912,
+    "queue_length": 1.0,
+    "congestion": 8.4163,
+    "incoming_flow": 1.0,
+    "outgoing_flow": 1.0
+  },
+  "target_means": {
+    "flow_rate": 224.3062,
+    "density": 6.3419,
+    "congestion": 3.6686,
+    "travel_time": 0.0
+  },
+  "target_stds": {
+    "flow_rate": 145.3069,
+    "density": 4.3845,
+    "congestion": 8.3934,
+    "travel_time": 1.0
+  },
+  "normalization_fitted_on": "TRAIN_SPLIT_ONLY"
+}

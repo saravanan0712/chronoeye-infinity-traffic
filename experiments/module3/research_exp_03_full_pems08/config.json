@@ -1,0 +1,64 @@
+{
+  "experiment_id": "module3_research_exp_03_full_pems08",
+  "dataset_name": "Caltrans_PeMS08_Full_Real",
+  "dataset_version": "1.0.0",
+  "provenance": {
+    "source": "California Department of Transportation Performance Measurement System",
+    "district": "District 8 (San Bernardino Freeway Network)",
+    "doi": "10.5281/zenodo.7816008"
+  },
+  "topology": {
+    "num_nodes": 170,
+    "num_edges": 295,
+    "directed": true,
+    "adjacency_normalization": "Symmetric Degree Normalization (D^-1/2 A D^-1/2)"
+  },
+  "temporal_parameters": {
+    "snapshot_interval_seconds": 300,
+    "total_timesteps": 576,
+    "history_window_steps": 12,
+    "history_window_minutes": 60,
+    "forecast_horizons_steps": [
+      1,
+      2,
+      3
+    ],
+    "forecast_horizons_minutes": [
+      5,
+      10,
+      15
+    ]
+  },
+  "splits": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15,
+    "chronological": true,
+    "train_samples": 393,
+    "val_samples": 84,
+    "test_samples": 85,
+    "total_samples": 562
+  },
+  "stgnn_hyperparameters": {
+    "in_channels": 8,
+    "hidden_dim": 32,
+    "num_st_blocks": 2,
+    "dropout": 0.1,
+    "optimizer": "Adam",
+    "learning_rate": 0.003,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "max_epochs": 2,
+    "best_epoch": 2,
+    "best_val_loss": 0.1829,
+    "parameter_count": 17116,
+    "random_seed": 42,
+    "device": "cpu"
+  },
+  "memory_optimization": {
+    "lazy_dataset_loading": true,
+    "gpu_streaming_minibatch": true,
+    "train_only_normalization": true,
+    "compact_numpy_source_arrays": true
+  }
+}
