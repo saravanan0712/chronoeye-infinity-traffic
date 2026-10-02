@@ -437,3 +437,70 @@ class JourneyReconstructionEngine:
             time_end=time_end,
         )
 
+    def get_journey_by_vehicle_id(self, vehicle_id: str) -> Optional[VehicleJourney]:
+        """
+        Retrieves a reconstructed VehicleJourney by global_vehicle_id (e.g. VEH_101) or journey_id (JRN_101).
+        Case-insensitive matching. Returns None if not found.
+        """
+        if not vehicle_id:
+            return None
+        v_id_clean = vehicle_id.upper().strip()
+        for j in self.journeys.values():
+            if j.global_vehicle_id.upper() == v_id_clean or j.journey_id.upper() == v_id_clean:
+                return j
+        return None
+
+    def get_journeys_by_plate(
+        self,
+        plate_number: str,
+        time_start: Optional[float] = None,
+        time_end: Optional[float] = None,
+    ) -> List[VehicleJourney]:
+        """
+        Searches all reconstructed VehicleJourneys for matches with plate_number.
+        Reuses standard license plate normalization and confusion-weighted distance.
+        Returns a list of distinct matching VehicleJourney objects without merging.
+        """
+        from app.perception.checkpoint_query import normalize_plate
+        from app.perception.plate_fusion import confusion_weighted_distance
+
+        if not plate_number:
+            return []
+
+        norm_target = normalize_plate(plate_number)
+        if not norm_target:
+            return []
+
+        exact_matches = []
+        near_matches = []
+
+        for j in self.journeys.values():
+            j_plate = normalize_plate(j.plate_number)
+            seg_plates = [normalize_plate(seg.plate_number) for seg in j.segments if seg.plate_number]
+            all_candidate_plates = ([j_plate] if j_plate else []) + seg_plates
+
+            if norm_target in all_candidate_plates:
+                exact_matches.append(j)
+            else:
+                for cand in all_candidate_plates:
+                    if cand and confusion_weighted_distance(norm_target, cand) <= 2.0:
+                        near_matches.append(j)
+                        break
+
+        candidates = exact_matches if exact_matches else near_matches
+
+        if time_start is not None or time_end is not None:
+            filtered = []
+            for j in candidates:
+                has_in_window_seg = any(
+                    (time_start is None or seg.timestamp >= time_start)
+                    and (time_end is None or seg.timestamp <= time_end)
+                    for seg in j.segments
+                )
+                if has_in_window_seg:
+                    filtered.append(j)
+            return filtered
+
+        return candidates
+
+

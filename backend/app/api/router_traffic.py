@@ -363,5 +363,95 @@ def get_vehicle_checkpoint_crossing(
     return result.model_dump()
 
 
+@router.get("/reid/vehicles/{vehicle_id}/journey")
+def get_vehicle_journey_by_id(
+    vehicle_id: str,
+    time_start: Optional[float] = Query(default=None, description="Earliest timestamp filter"),
+    time_end: Optional[float] = Query(default=None, description="Latest timestamp filter"),
+) -> Dict[str, Any]:
+    """
+    Retrieves complete reconstructed multi-camera journey for a global vehicle identity (VEH_101, etc.).
+    Preserves all chronological JourneySegments, transition evidence, timestamp uncertainty, and unobserved gaps.
+    """
+    journey = _journey_engine.get_journey_by_vehicle_id(vehicle_id)
+    if journey is None:
+        raise HTTPException(status_code=404, detail=f"Global vehicle journey {vehicle_id} not found")
+
+    if time_start is not None or time_end is not None:
+        filtered_segs = [
+            seg for seg in journey.segments
+            if (time_start is None or seg.timestamp >= time_start)
+            and (time_end is None or seg.timestamp <= time_end)
+        ]
+        # Create non-destructive shallow copy for response
+        j_dict = journey.model_dump()
+        j_dict["segments"] = [s.model_dump() for s in filtered_segs]
+        j_dict["cameras"] = list(dict.fromkeys(s.camera_id for s in filtered_segs))
+        return j_dict
+
+    return journey.model_dump()
+
+
+@router.get("/reid/journey-query")
+def query_vehicle_journeys(
+    vehicle_id: Optional[str] = Query(default=None, description="Global vehicle ID or journey ID (e.g. VEH_101)"),
+    plate_number: Optional[str] = Query(default=None, description="Target license plate number (e.g. TN09AB1111)"),
+    time_start: Optional[float] = Query(default=None, description="Earliest timestamp filter"),
+    time_end: Optional[float] = Query(default=None, description="Latest timestamp filter"),
+) -> Dict[str, Any]:
+    """
+    Queries reconstructed vehicle journeys by global_vehicle_id or license plate number.
+    Supports time-window filtering, multiple distinct plate matches, and full evidence provenance.
+    """
+    if not vehicle_id and not plate_number:
+        raise HTTPException(
+            status_code=400,
+            detail="Either vehicle_id or plate_number must be specified for journey query.",
+        )
+
+    if vehicle_id:
+        journey = _journey_engine.get_journey_by_vehicle_id(vehicle_id)
+        if journey is None:
+            raise HTTPException(status_code=404, detail=f"Vehicle identity {vehicle_id} not found")
+
+        if time_start is not None or time_end is not None:
+            filtered_segs = [
+                seg for seg in journey.segments
+                if (time_start is None or seg.timestamp >= time_start)
+                and (time_end is None or seg.timestamp <= time_end)
+            ]
+            j_dict = journey.model_dump()
+            j_dict["segments"] = [s.model_dump() for s in filtered_segs]
+            j_dict["cameras"] = list(dict.fromkeys(s.camera_id for s in filtered_segs))
+            return {"count": 1, "journeys": [j_dict]}
+
+        return {"count": 1, "journeys": [journey.model_dump()]}
+
+    # Query by plate number
+    matching_journeys = _journey_engine.get_journeys_by_plate(
+        plate_number=plate_number,
+        time_start=time_start,
+        time_end=time_end,
+    )
+
+    results = []
+    for j in matching_journeys:
+        if time_start is not None or time_end is not None:
+            filtered_segs = [
+                seg for seg in j.segments
+                if (time_start is None or seg.timestamp >= time_start)
+                and (time_end is None or seg.timestamp <= time_end)
+            ]
+            j_dict = j.model_dump()
+            j_dict["segments"] = [s.model_dump() for s in filtered_segs]
+            j_dict["cameras"] = list(dict.fromkeys(s.camera_id for s in filtered_segs))
+            results.append(j_dict)
+        else:
+            results.append(j.model_dump())
+
+    return {"count": len(results), "journeys": results}
+
+
+
 
 
