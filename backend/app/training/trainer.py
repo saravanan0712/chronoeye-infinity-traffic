@@ -77,8 +77,12 @@ class STGNNTrainer:
         self.config = config or getattr(model, "config", STGNNConfig())
         if device is not None:
             self.device = torch.device(device)
+        elif self.config.device == "auto":
+            self.device = torch.device(
+                "cuda" if torch.cuda.is_available() else "cpu"
+            )
         else:
-            self.device = torch.device(self.config.device if torch.cuda.is_available() and self.config.device != "cpu" else "cpu")
+            self.device = torch.device(self.config.device)
         self.model.to(self.device)
         self.loss_fn = MaskedLoss(loss_type=loss_type)
         self.checkpoint_dir = checkpoint_dir or "checkpoints/stgnn"

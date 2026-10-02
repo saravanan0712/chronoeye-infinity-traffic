@@ -26,7 +26,7 @@ class STGNNConfig(BaseModel):
     learning_rate: float = 0.001
     weight_decay: float = 1e-4
     random_seed: int = 42
-    device: str = "cpu"
+    device: str = "auto"
 
     @property
     def num_horizons(self) -> int:

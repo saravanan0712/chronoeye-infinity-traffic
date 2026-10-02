@@ -133,6 +133,7 @@ class AblationStudyRunner:
         contract: Optional[Any] = None,
         epochs: int = 15,
         checkpoint_dir: str = "checkpoints/ablations",
+        compact_dataset: Optional[Any] = None,
     ) -> Dict[str, AblationExperimentResult]:
 
         """
@@ -145,6 +146,7 @@ class AblationStudyRunner:
             forecast_horizons=dataset.forecast_horizons,
             hidden_dim=32,
             learning_rate=0.005,
+            device="cuda" if torch.cuda.is_available() else "cpu",
         )
 
         # Baseline ST-GNN Full
@@ -183,8 +185,35 @@ class AblationStudyRunner:
             test_metrics=res_spat.test_metrics.get("ST-GNN", {}),
         )
 
-        # Ablation D: Shorter History (T_in = 1 vs T_in = 3)
-        if contract is not None:
+        # Ablation D: Short History (T_in = 1 vs Full T_in = 12)
+        if compact_dataset is not None:
+            slicer_short = TemporalDatasetSlicer(
+                input_sequence_length=1,
+                forecast_horizons=compact_dataset.forecast_horizons,
+                train_ratio=compact_dataset.metadata.get("train_ratio", 0.70),
+                val_ratio=compact_dataset.metadata.get("val_ratio", 0.15),
+                test_ratio=compact_dataset.metadata.get("test_ratio", 0.15),
+            )
+            dataset_short = slicer_short.slice_compact_dataset(compact_dataset)
+
+            config_short = copy.deepcopy(config)
+            config_short.input_sequence_length = 1
+
+            model_short = SpatioTemporalGNN(config=config_short)
+
+            trainer_short = STGNNTrainer(
+                model_short,
+                config=config_short,
+                checkpoint_dir=checkpoint_dir,
+            )
+
+            res_short = trainer_short.train(
+                dataset_short,
+                epochs=epochs,
+                save_checkpoint_name="history_t1.pt",
+            )
+
+        elif contract is not None:
             slicer_short = TemporalDatasetSlicer(
                 input_sequence_length=1,
                 forecast_horizons=dataset.forecast_horizons,
@@ -192,12 +221,30 @@ class AblationStudyRunner:
                 val_ratio=dataset.metadata.get("val_ratio", 0.15),
                 test_ratio=dataset.metadata.get("test_ratio", 0.15),
             )
+
             dataset_short = slicer_short.slice_dataset(contract)
+
             config_short = copy.deepcopy(config)
             config_short.input_sequence_length = 1
+
             model_short = SpatioTemporalGNN(config=config_short)
-            trainer_short = STGNNTrainer(model_short, config=config_short, checkpoint_dir=checkpoint_dir)
-            res_short = trainer_short.train(dataset_short, epochs=epochs, save_checkpoint_name="history_t1.pt")
+
+            trainer_short = STGNNTrainer(
+                model_short,
+                config=config_short,
+                checkpoint_dir=checkpoint_dir,
+            )
+
+            res_short = trainer_short.train(
+                dataset_short,
+                epochs=epochs,
+                save_checkpoint_name="history_t1.pt",
+            )
+
+        else:
+            dataset_short = None
+
+        if dataset_short is not None:
             results["Ablation_D_Short_History_T1"] = AblationExperimentResult(
                 ablation_id="ABLATION_D",
                 description="Short History Comparison (T_in = 1 snapshot / 5 min)",
