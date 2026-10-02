@@ -6,7 +6,7 @@ congestion, historical sequences, graph states, forecasts, and uncertainty with 
 
 import time
 from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, List, Any
+from typing import Dict, List, Optional, Any
 from app.simulation.traffic_generator import SimulationConfig, SyntheticTrafficGenerator
 from app.state.traffic_state_engine import DynamicTrafficStateEngine
 from app.forecasting.forecasting_engine import TrafficForecastingEngine
@@ -315,6 +315,53 @@ def get_recent_identity_matches() -> Dict[str, Any]:
         "matching_config": _journey_engine.config.model_dump(),
         "total_active_journeys": len(_journey_engine.journeys),
     }
+
+
+@router.get("/reid/checkpoint-query")
+def query_checkpoint_crossing(
+    checkpoint_id: str = Query(..., description="Checkpoint/camera ID (e.g. CAM_B, CAM_B_WEST)"),
+    vehicle_id: Optional[str] = Query(default=None, description="Global vehicle ID or journey ID (e.g. VEH_101)"),
+    plate_number: Optional[str] = Query(default=None, description="Target license plate number (e.g. TN09AB1111)"),
+    time_start: Optional[float] = Query(default=None, description="Earliest timestamp filter"),
+    time_end: Optional[float] = Query(default=None, description="Latest timestamp filter"),
+) -> Dict[str, Any]:
+    """
+    Evaluates whether a target vehicle or license plate crossed a camera checkpoint.
+    Returns structured OBSERVED / NOT_OBSERVED / UNKNOWN verdict with evidence provenance and uncertainty.
+    """
+    if not vehicle_id and not plate_number:
+        raise HTTPException(
+            status_code=400,
+            detail="Either vehicle_id or plate_number must be specified for checkpoint query.",
+        )
+    result = _journey_engine.query_checkpoint(
+        checkpoint_id=checkpoint_id,
+        vehicle_id=vehicle_id,
+        plate_number=plate_number,
+        time_start=time_start,
+        time_end=time_end,
+    )
+    return result.model_dump()
+
+
+@router.get("/reid/vehicles/{vehicle_id}/checkpoints/{checkpoint_id}")
+def get_vehicle_checkpoint_crossing(
+    vehicle_id: str,
+    checkpoint_id: str,
+    time_start: Optional[float] = Query(default=None),
+    time_end: Optional[float] = Query(default=None),
+) -> Dict[str, Any]:
+    """
+    Evaluates whether global vehicle identity crossed a specific checkpoint.
+    """
+    result = _journey_engine.query_checkpoint(
+        checkpoint_id=checkpoint_id,
+        vehicle_id=vehicle_id,
+        time_start=time_start,
+        time_end=time_end,
+    )
+    return result.model_dump()
+
 
 
 

@@ -158,3 +158,36 @@ class VehicleJourney(BaseModel):
     @property
     def best_plate_number(self) -> Optional[str]:
         return self.plate_number
+
+
+class CheckpointObservationStatus(str, Enum):
+    OBSERVED = "OBSERVED"
+    NOT_OBSERVED = "NOT_OBSERVED"
+    UNKNOWN = "UNKNOWN"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+
+class CheckpointQueryResult(BaseModel):
+    """
+    Structured response for vehicle-checkpoint crossing query.
+    Supports queries like:
+      - 'Did global vehicle VEH_101 cross checkpoint CAM_B?'
+      - 'Did plate TN09AB1111 cross checkpoint CAM_C?'
+    """
+    query_type: str = "CHECKPOINT_CROSSING"
+    target_vehicle_id: Optional[str] = None
+    target_plate_number: Optional[str] = None
+    checkpoint_id: str
+    status: CheckpointObservationStatus
+    timestamp: Optional[float] = None
+    timestamp_uncertainty_seconds: Optional[float] = None
+    confidence: float = 0.0
+    plate_number: Optional[str] = None
+    plate_status: Optional[str] = None
+    journey_id: Optional[str] = None
+    supporting_segments_count: int = 0
+    has_unobserved_gap: bool = False
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    uncertainty: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+

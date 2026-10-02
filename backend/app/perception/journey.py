@@ -414,3 +414,26 @@ class JourneyReconstructionEngine:
                 "last_timestamp": round(journey.last_seen, 3),
             })
         return report
+
+    def query_checkpoint(
+        self,
+        checkpoint_id: str,
+        vehicle_id: Optional[str] = None,
+        plate_number: Optional[str] = None,
+        time_start: Optional[float] = None,
+        time_end: Optional[float] = None,
+    ) -> Any:
+        """
+        Queries whether a vehicle (by global_vehicle_id or license plate) crossed a checkpoint.
+        Returns structured CheckpointQueryResult with OBSERVED / NOT_OBSERVED / UNKNOWN verdict.
+        """
+        from app.perception.checkpoint_query import CheckpointQueryService
+        return CheckpointQueryService.query_checkpoint(
+            journey_engine=self,
+            checkpoint_id=checkpoint_id,
+            vehicle_id=vehicle_id,
+            plate_number=plate_number,
+            time_start=time_start,
+            time_end=time_end,
+        )
+
