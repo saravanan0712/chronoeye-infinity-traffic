@@ -1,0 +1,49 @@
+{
+  "experiment_name": "vehicle_rear_set01_cross_camera_evaluation",
+  "dataset": {
+    "name": "Vehicle-Rear Set01",
+    "dataset_root": "/content/drive/MyDrive/ChronoEye_Datasets/Vehicle-Rear/extracted",
+    "local_fallback_root": "data/research/vehicle_rear_set01",
+    "camera1_video": "Camera1/Set01.mp4",
+    "camera2_video": "Camera2/Set01.mp4",
+    "camera1_gt_xml": "data/dataset2/xmls/Camera1/Set01/vehicles.xml",
+    "camera2_gt_xml": "data/dataset2/xmls/Camera2/Set01/vehicles.xml",
+    "json_metadata": "data/dataset_3.json"
+  },
+  "evaluation_params": {
+    "target_cross_camera_vehicles": 10,
+    "negative_vehicle_pairs": 5,
+    "frame_margin_seconds": 3.0,
+    "iou_match_threshold": 0.30
+  },
+  "pipeline_params": {
+    "device": "cpu",
+    "model_path": "yolov8n.pt",
+    "conf_threshold": 0.35,
+    "anpr_enabled": true,
+    "ocr_frame_interval": 5,
+    "reid_enabled": true,
+    "journey_timeout_seconds": 60.0,
+    "prefer_real_ocr": true
+  },
+  "frozen_reid_weights": {
+    "w_plate": 0.35,
+    "w_appearance": 0.15,
+    "w_visual_features": 0.10,
+    "w_vehicle_type": 0.10,
+    "w_direction": 0.10,
+    "w_temporal": 0.05,
+    "w_spatial": 0.15
+  },
+  "frozen_reid_thresholds": {
+    "confirmed_threshold": 0.75,
+    "probable_threshold": 0.50,
+    "insufficient_evidence_threshold": 0.50
+  },
+  "output_paths": {
+    "ground_truth_dir": "experiments/vehicle_rear_set01/ground_truth",
+    "predictions_dir": "experiments/vehicle_rear_set01/predictions",
+    "evaluation_dir": "experiments/vehicle_rear_set01/evaluation",
+    "logs_dir": "experiments/vehicle_rear_set01/logs"
+  }
+}

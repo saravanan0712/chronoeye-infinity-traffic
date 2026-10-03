@@ -1,0 +1,209 @@
+{
+  "dataset_name": "Vehicle-Rear Set01",
+  "camera1_total_vehicles": 4,
+  "camera2_total_vehicles": 4,
+  "cross_camera_vehicles_count": 2,
+  "single_camera_vehicles_count": 2,
+  "camera1_vehicles": {
+    "KW527": {
+      "vehicle_gt_id": "KW527",
+      "raw_id": "1",
+      "camera_id": "Camera1",
+      "raw_plate": "KW527",
+      "normalized_plate": "KW527",
+      "vehicle_type": "car",
+      "make": "Toyota",
+      "model": "Innova",
+      "color": "White",
+      "year": "2019",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 1,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        },
+        {
+          "frame": 6,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 2,
+      "min_frame": 1,
+      "max_frame": 6
+    },
+    "Camera1_V": {
+      "vehicle_gt_id": "Camera1_V",
+      "raw_id": "",
+      "camera_id": "Camera1",
+      "raw_plate": "",
+      "normalized_plate": "",
+      "vehicle_type": "car",
+      "make": "",
+      "model": "",
+      "color": "",
+      "year": "",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [],
+      "observation_count": 0,
+      "min_frame": 0,
+      "max_frame": 0
+    },
+    "SX8525": {
+      "vehicle_gt_id": "SX8525",
+      "raw_id": "2",
+      "camera_id": "Camera1",
+      "raw_plate": "SX8525",
+      "normalized_plate": "SX8525",
+      "vehicle_type": "car",
+      "make": "Hyundai",
+      "model": "i20",
+      "color": "Silver",
+      "year": "2020",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 1,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        },
+        {
+          "frame": 8,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 2,
+      "min_frame": 1,
+      "max_frame": 8
+    },
+    "X0147": {
+      "vehicle_gt_id": "X0147",
+      "raw_id": "3",
+      "camera_id": "Camera1",
+      "raw_plate": "X0147",
+      "normalized_plate": "X0147",
+      "vehicle_type": "car",
+      "make": "Honda",
+      "model": "City",
+      "color": "Black",
+      "year": "2017",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 3,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 1,
+      "min_frame": 3,
+      "max_frame": 3
+    }
+  },
+  "camera2_vehicles": {
+    "KW527": {
+      "vehicle_gt_id": "KW527",
+      "raw_id": "1",
+      "camera_id": "Camera2",
+      "raw_plate": "KW527",
+      "normalized_plate": "KW527",
+      "vehicle_type": "car",
+      "make": "Toyota",
+      "model": "Innova",
+      "color": "White",
+      "year": "2019",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 25,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 1,
+      "min_frame": 25,
+      "max_frame": 25
+    },
+    "Camera2_V": {
+      "vehicle_gt_id": "Camera2_V",
+      "raw_id": "",
+      "camera_id": "Camera2",
+      "raw_plate": "",
+      "normalized_plate": "",
+      "vehicle_type": "car",
+      "make": "",
+      "model": "",
+      "color": "",
+      "year": "",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [],
+      "observation_count": 0,
+      "min_frame": 0,
+      "max_frame": 0
+    },
+    "SX8525": {
+      "vehicle_gt_id": "SX8525",
+      "raw_id": "2",
+      "camera_id": "Camera2",
+      "raw_plate": "SX8525",
+      "normalized_plate": "SX8525",
+      "vehicle_type": "car",
+      "make": "Hyundai",
+      "model": "i20",
+      "color": "Silver",
+      "year": "2020",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 30,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 1,
+      "min_frame": 30,
+      "max_frame": 30
+    },
+    "SINGLE999": {
+      "vehicle_gt_id": "SINGLE999",
+      "raw_id": "4",
+      "camera_id": "Camera2",
+      "raw_plate": "SINGLE999",
+      "normalized_plate": "SINGLE999",
+      "vehicle_type": "truck",
+      "make": "Tata",
+      "model": "407",
+      "color": "Yellow",
+      "year": "2015",
+      "motorcycle": false,
+      "quality": "good",
+      "discard": false,
+      "observations": [
+        {
+          "frame": 40,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "observation_count": 1,
+      "min_frame": 40,
+      "max_frame": 40
+    }
+  }
+}

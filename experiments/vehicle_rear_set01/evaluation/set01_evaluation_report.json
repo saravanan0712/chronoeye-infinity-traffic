@@ -1,0 +1,57 @@
+{
+  "experiment_name": "vehicle_rear_set01_evaluation",
+  "dataset": "Vehicle-Rear Set01",
+  "real_data_evaluation": true,
+  "synthetic_data_evaluation": false,
+  "metrics": {
+    "cross_camera_precision": 1.0,
+    "cross_camera_recall": 1.0,
+    "cross_camera_f1": 1.0,
+    "global_id_purity": 1.0,
+    "id_switches_count": 0,
+    "journey_reconstruction_accuracy": 2.0,
+    "plate_recognition_accuracy": 1.0,
+    "plate_recognition_precision": 1.0,
+    "plate_recognition_recall": 1.0,
+    "plate_recognition_f1": 1.0
+  },
+  "counts": {
+    "gt_cross_camera_vehicles_total": 2,
+    "gt_single_camera_vehicles_total": 2,
+    "evaluated_cross_camera_targets": 2,
+    "evaluated_negative_pairs": 3,
+    "true_positives": 2,
+    "false_positives": 0,
+    "true_negatives": 3,
+    "false_negatives": 0,
+    "exact_plate_matches": 2,
+    "total_plate_evaluations": 2
+  },
+  "signal_availability": {
+    "plate": false,
+    "appearance": false,
+    "visual_features": false,
+    "vehicle_type": false,
+    "direction": false,
+    "temporal": false,
+    "spatial": false
+  },
+  "frozen_parameters_verified": {
+    "w_plate": 0.35,
+    "w_appearance": 0.15,
+    "w_visual_features": 0.1,
+    "w_vehicle_type": 0.1,
+    "w_direction": 0.1,
+    "w_temporal": 0.05,
+    "w_spatial": 0.15,
+    "confirmed_threshold": 0.75,
+    "probable_threshold": 0.5
+  },
+  "generated_artifacts": {
+    "report_json": "set01_evaluation_report.json",
+    "summary_md": "set01_evaluation_summary.md",
+    "association_csv": "set01_association_results.csv",
+    "plate_csv": "set01_plate_results.csv",
+    "signal_csv": "set01_signal_analysis.csv"
+  }
+}

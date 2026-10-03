@@ -1,0 +1,108 @@
+{
+  "dataset_name": "Vehicle-Rear Set01 Cross-Camera Ground Truth",
+  "cross_camera_count": 2,
+  "cross_camera_vehicles": [
+    {
+      "gt_identity": "KW527",
+      "normalized_plate": "KW527",
+      "raw_plate_c1": "KW527",
+      "raw_plate_c2": "KW527",
+      "vehicle_type": "car",
+      "make": "Toyota",
+      "model": "Innova",
+      "color": "White",
+      "year": "2019",
+      "camera1_summary": {
+        "raw_id": "1",
+        "min_frame": 1,
+        "max_frame": 6,
+        "observation_count": 2
+      },
+      "camera2_summary": {
+        "raw_id": "1",
+        "min_frame": 25,
+        "max_frame": 25,
+        "observation_count": 1
+      },
+      "camera1_observations": [
+        {
+          "frame": 1,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        },
+        {
+          "frame": 6,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "camera2_observations": [
+        {
+          "frame": 25,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ]
+    },
+    {
+      "gt_identity": "SX8525",
+      "normalized_plate": "SX8525",
+      "raw_plate_c1": "SX8525",
+      "raw_plate_c2": "SX8525",
+      "vehicle_type": "car",
+      "make": "Hyundai",
+      "model": "i20",
+      "color": "Silver",
+      "year": "2020",
+      "camera1_summary": {
+        "raw_id": "2",
+        "min_frame": 1,
+        "max_frame": 8,
+        "observation_count": 2
+      },
+      "camera2_summary": {
+        "raw_id": "2",
+        "min_frame": 30,
+        "max_frame": 30,
+        "observation_count": 1
+      },
+      "camera1_observations": [
+        {
+          "frame": 1,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        },
+        {
+          "frame": 8,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ],
+      "camera2_observations": [
+        {
+          "frame": 30,
+          "plate_bbox": null,
+          "vehicle_bbox": null
+        }
+      ]
+    }
+  ],
+  "single_camera_vehicles": [
+    {
+      "vehicle_gt_id": "X0147",
+      "camera_id": "Camera1",
+      "normalized_plate": "X0147",
+      "observation_count": 1,
+      "min_frame": 3,
+      "max_frame": 3
+    },
+    {
+      "vehicle_gt_id": "SINGLE999",
+      "camera_id": "Camera2",
+      "normalized_plate": "SINGLE999",
+      "observation_count": 1,
+      "min_frame": 40,
+      "max_frame": 40
+    }
+  ]
+}

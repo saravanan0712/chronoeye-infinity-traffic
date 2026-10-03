@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vehicles>
+    <vehicle id="1">
+        <plate>KW527</plate>
+        <type>car</type>
+        <make>Toyota</make>
+        <model>Innova</model>
+        <color>White</color>
+        <year>2019</year>
+        <motorcycle>0</motorcycle>
+        <quality>good</quality>
+        <discard>0</discard>
+        <frame number="1">
+            <plate x="100" y="200" width="170" height="58" />
+            <vehicle x="50" y="100" width="732" height="364" />
+        </frame>
+        <frame number="6">
+            <plate x="110" y="210" width="179" height="66" />
+            <vehicle x="60" y="110" width="798" height="370" />
+        </frame>
+    </vehicle>
+    <vehicle id="2">
+        <plate>SX8525</plate>
+        <type>car</type>
+        <make>Hyundai</make>
+        <model>i20</model>
+        <color>Silver</color>
+        <year>2020</year>
+        <motorcycle>0</motorcycle>
+        <quality>good</quality>
+        <discard>0</discard>
+        <frame number="1">
+            <plate x="200" y="300" width="90" height="63" />
+            <vehicle x="150" y="250" width="424" height="317" />
+        </frame>
+        <frame number="8">
+            <plate x="220" y="320" width="95" height="67" />
+            <vehicle x="160" y="260" width="460" height="339" />
+        </frame>
+    </vehicle>
+    <vehicle id="3">
+        <plate>X0147</plate>
+        <type>car</type>
+        <make>Honda</make>
+        <model>City</model>
+        <color>Black</color>
+        <year>2017</year>
+        <motorcycle>0</motorcycle>
+        <quality>good</quality>
+        <discard>0</discard>
+        <frame number="3">
+            <plate x="300" y="150" width="61" height="33" />
+            <vehicle x="250" y="100" width="300" height="224" />
+        </frame>
+    </vehicle>
+</vehicles>

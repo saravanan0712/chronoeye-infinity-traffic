@@ -1,0 +1,1229 @@
+{
+  "dataset_name": "Vehicle-Rear Set01",
+  "runtime_seconds": 61.85,
+  "total_global_vehicles": 4,
+  "journeys": [
+    {
+      "journey_id": "JRN_101",
+      "global_vehicle_id": "VEH_101",
+      "plate": "KW527",
+      "vehicle_type": "car",
+      "status": "ACTIVE",
+      "cameras": [
+        "Camera1",
+        "Camera2"
+      ],
+      "first_seen": 0.038,
+      "last_seen": 0.57,
+      "segments": [
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_101",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "KW527",
+          "plate_confidence": 0.808,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        }
+      ]
+    },
+    {
+      "journey_id": "JRN_102",
+      "global_vehicle_id": "VEH_102",
+      "plate": "SX8525",
+      "vehicle_type": "car",
+      "status": "ACTIVE",
+      "cameras": [
+        "Camera1",
+        "Camera2"
+      ],
+      "first_seen": 0.038,
+      "last_seen": 0.57,
+      "segments": [
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_102",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "SX8525",
+          "plate_confidence": 0.803,
+          "plate_status": "CONFIRMED",
+          "has_unobserved_gap": false
+        }
+      ]
+    },
+    {
+      "journey_id": "JRN_103",
+      "global_vehicle_id": "VEH_103",
+      "plate": "",
+      "vehicle_type": "car",
+      "status": "ACTIVE",
+      "cameras": [
+        "Camera1",
+        "Camera2"
+      ],
+      "first_seen": 0.038,
+      "last_seen": 0.57,
+      "segments": [
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.038,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.076,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_103",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": null,
+          "plate_confidence": null,
+          "plate_status": null,
+          "has_unobserved_gap": false
+        }
+      ]
+    },
+    {
+      "journey_id": "JRN_104",
+      "global_vehicle_id": "VEH_104",
+      "plate": "X0147",
+      "vehicle_type": "car",
+      "status": "ACTIVE",
+      "cameras": [
+        "Camera1",
+        "Camera2"
+      ],
+      "first_seen": 0.114,
+      "last_seen": 0.57,
+      "segments": [
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.114,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.152,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.19,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.228,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.266,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.304,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.342,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.38,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.418,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.456,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.494,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.532,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera1",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        },
+        {
+          "camera_id": "Camera2",
+          "local_track_id": "TRK_104",
+          "timestamp": 0.57,
+          "timestamp_uncertainty_seconds": null,
+          "plate_number": "X0147",
+          "plate_confidence": 0.712,
+          "plate_status": "PENDING",
+          "has_unobserved_gap": false
+        }
+      ]
+    }
+  ],
+  "transitions": [],
+  "raw_records": []
+}

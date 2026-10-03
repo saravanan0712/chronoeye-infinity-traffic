@@ -1,0 +1,3 @@
+gt_identity,normalized_plate,camera1_global_id,camera2_global_id,same_global_id,result_status
+KW527,KW527,VEH_101,VEH_101,True,TRUE_POSITIVE
+SX8525,SX8525,VEH_102,VEH_102,True,TRUE_POSITIVE

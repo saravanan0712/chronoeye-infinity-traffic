@@ -1,0 +1,1 @@
+from_camera,to_camera,from_track_id,to_track_id,plate_similarity,appearance_similarity,visual_features_similarity,vehicle_type_similarity,direction_similarity,temporal_compatibility,spatial_compatibility,overall_score,decision,rejection_reason
