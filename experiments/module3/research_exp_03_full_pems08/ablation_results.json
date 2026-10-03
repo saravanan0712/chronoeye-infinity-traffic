@@ -1,1 +1,302 @@
-{}
+{
+  "Full_STGNN": {
+    "ablation_id": "FULL_STGNN",
+    "description": "Complete Spatio-Temporal Graph Neural Network (Spatial GCN + Temporal GRU)",
+    "model_name": "ST-GNN",
+    "best_val_loss": 0.1197,
+    "test_metrics": {
+      "PLUS_5MIN": {
+        "flow_rate": {
+          "mae": 0.1041,
+          "rmse": 0.1549,
+          "mape": 2.0812
+        },
+        "density": {
+          "mae": 0.1276,
+          "rmse": 0.297,
+          "mape": 2.4831
+        },
+        "congestion": {
+          "mae": 0.0969,
+          "rmse": 0.2446,
+          "mape": 1.8795
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_10MIN": {
+        "flow_rate": {
+          "mae": 0.1135,
+          "rmse": 0.1732,
+          "mape": 2.2706
+        },
+        "density": {
+          "mae": 0.1455,
+          "rmse": 0.3471,
+          "mape": 2.8304
+        },
+        "congestion": {
+          "mae": 0.1293,
+          "rmse": 0.3468,
+          "mape": 2.5094
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_15MIN": {
+        "flow_rate": {
+          "mae": 0.1228,
+          "rmse": 0.1879,
+          "mape": 2.4557
+        },
+        "density": {
+          "mae": 0.1605,
+          "rmse": 0.3808,
+          "mape": 3.1284
+        },
+        "congestion": {
+          "mae": 0.1515,
+          "rmse": 0.4237,
+          "mape": 2.9468
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      }
+    },
+    "notes": null
+  },
+  "Ablation_A_Temporal_Only": {
+    "ablation_id": "ABLATION_A",
+    "description": "Temporal-Only Model (No spatial graph convolution)",
+    "model_name": "Temporal-Only GRU",
+    "best_val_loss": 0.1182,
+    "test_metrics": {
+      "PLUS_5MIN": {
+        "flow_rate": {
+          "mae": 0.1032,
+          "rmse": 0.1563,
+          "mape": 2.0639
+        },
+        "density": {
+          "mae": 0.1289,
+          "rmse": 0.2972,
+          "mape": 2.5123
+        },
+        "congestion": {
+          "mae": 0.0933,
+          "rmse": 0.2325,
+          "mape": 1.8281
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_10MIN": {
+        "flow_rate": {
+          "mae": 0.1119,
+          "rmse": 0.1721,
+          "mape": 2.2371
+        },
+        "density": {
+          "mae": 0.1467,
+          "rmse": 0.3464,
+          "mape": 2.8567
+        },
+        "congestion": {
+          "mae": 0.1237,
+          "rmse": 0.338,
+          "mape": 2.4177
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_15MIN": {
+        "flow_rate": {
+          "mae": 0.1221,
+          "rmse": 0.1885,
+          "mape": 2.4424
+        },
+        "density": {
+          "mae": 0.1624,
+          "rmse": 0.3831,
+          "mape": 3.1662
+        },
+        "congestion": {
+          "mae": 0.1474,
+          "rmse": 0.4218,
+          "mape": 2.8836
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      }
+    },
+    "notes": null
+  },
+  "Ablation_B_Spatial_Only": {
+    "ablation_id": "ABLATION_B",
+    "description": "Spatial-Only Model (No temporal sequence modeling)",
+    "model_name": "Spatial-Only GCN",
+    "best_val_loss": 0.3016,
+    "test_metrics": {
+      "PLUS_5MIN": {
+        "flow_rate": {
+          "mae": 0.3489,
+          "rmse": 0.4973,
+          "mape": 6.9789
+        },
+        "density": {
+          "mae": 0.3212,
+          "rmse": 0.585,
+          "mape": 6.3046
+        },
+        "congestion": {
+          "mae": 0.2582,
+          "rmse": 0.6154,
+          "mape": 5.0124
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_10MIN": {
+        "flow_rate": {
+          "mae": 0.3537,
+          "rmse": 0.5027,
+          "mape": 7.0732
+        },
+        "density": {
+          "mae": 0.3285,
+          "rmse": 0.602,
+          "mape": 6.4465
+        },
+        "congestion": {
+          "mae": 0.2706,
+          "rmse": 0.6466,
+          "mape": 5.2505
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_15MIN": {
+        "flow_rate": {
+          "mae": 0.3588,
+          "rmse": 0.508,
+          "mape": 7.1755
+        },
+        "density": {
+          "mae": 0.3358,
+          "rmse": 0.6176,
+          "mape": 6.5876
+        },
+        "congestion": {
+          "mae": 0.2833,
+          "rmse": 0.677,
+          "mape": 5.4915
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      }
+    },
+    "notes": null
+  },
+  "Ablation_D_Short_History_T1": {
+    "ablation_id": "ABLATION_D",
+    "description": "Short History Comparison (T_in = 1 snapshot / 5 min)",
+    "model_name": "ST-GNN (T_in=1)",
+    "best_val_loss": 0.1324,
+    "test_metrics": {
+      "PLUS_5MIN": {
+        "flow_rate": {
+          "mae": 0.1176,
+          "rmse": 0.1735,
+          "mape": 2.3524
+        },
+        "density": {
+          "mae": 0.148,
+          "rmse": 0.3081,
+          "mape": 2.8997
+        },
+        "congestion": {
+          "mae": 0.1034,
+          "rmse": 0.2459,
+          "mape": 2.0307
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_10MIN": {
+        "flow_rate": {
+          "mae": 0.1288,
+          "rmse": 0.1916,
+          "mape": 2.575
+        },
+        "density": {
+          "mae": 0.1616,
+          "rmse": 0.3582,
+          "mape": 3.1606
+        },
+        "congestion": {
+          "mae": 0.1333,
+          "rmse": 0.3513,
+          "mape": 2.6138
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      },
+      "PLUS_15MIN": {
+        "flow_rate": {
+          "mae": 0.1414,
+          "rmse": 0.2109,
+          "mape": 2.8279
+        },
+        "density": {
+          "mae": 0.1787,
+          "rmse": 0.3951,
+          "mape": 3.4996
+        },
+        "congestion": {
+          "mae": 0.1586,
+          "rmse": 0.4345,
+          "mape": 3.1074
+        },
+        "travel_time": {
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mape": 0.0
+        }
+      }
+    },
+    "notes": null
+  }
+}
