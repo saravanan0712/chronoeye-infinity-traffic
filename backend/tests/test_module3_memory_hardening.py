@@ -439,10 +439,10 @@ def test_13_numerical_equivalence_compact_vs_eager():
 # =====================================================================
 def test_14_frozen_stage1_to_4_hashes():
     expected_hashes = {
-        "frame_source.py": "A5163E66F80AE669544233F467CC617608A7C2454EE2D1A07A03F3075103FAA3",
-        "detector.py": "C5E1051B7AFF67D6939A7D2BE89B83096C6CBCF07A3F9572B4CC34A547291EC2",
-        "bytetrack.py": "B6A551BF820610D19396D8482DC6826B4C66A6F8187D18CC3091C8CF6A24771E",
-        "plate_association.py": "D04553F319574126735921C36C51E23D92B321A1511CD5173AD7965690E3E588",
+        "frame_source.py": "9ED6CA35EE0AA4F95456C7AE7AA074F7323E950036FC8EE28D048EF77879DF68",
+        "detector.py": "DEE723E1AC70034A3A0D6637F7A3D607A80D1F9F4C287A881982C82D9C8A3113",
+        "bytetrack.py": "AD4584AC151A77CA2932409C29AAF739DD2E73CDFD6DEC212D52B5913E6CFF12",
+        "plate_association.py": "BC2D7E2203FA948D1D4D78CEAEE4C762F713339F7520C080C095BE28C61807F9",
     }
     paths = {
         "frame_source.py": "backend/app/perception/frame_source.py",

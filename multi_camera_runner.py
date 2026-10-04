@@ -162,7 +162,8 @@ class CameraWorker:
         # 4. Initialize ALPR Manager
         if self.runner_config.anpr_enabled:
             self.alpr_manager = PlateTrackerAssociationManager(
-                ocr_frame_interval=self.runner_config.ocr_frame_interval
+                ocr_frame_interval=self.runner_config.ocr_frame_interval,
+                device=self.runner_config.device,
             )
 
         self._is_initialized = True

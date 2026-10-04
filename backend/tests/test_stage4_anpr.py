@@ -54,6 +54,16 @@ class TestStage4RealANPRPipeline(unittest.TestCase):
         engine = OCREngineFactory.create_engine(prefer_real=False)
         self.assertIsInstance(engine, TestOCREngine)
 
+    def test_2b_real_ocr_unavailable_raises_runtime_error(self):
+        """Test 4.2b: Verify create_engine(prefer_real=True) raises RuntimeError when real providers fail."""
+        from unittest.mock import patch
+        with patch("app.perception.ocr_engine.PaddleOCREngine", side_effect=RuntimeError("Paddle init failed")), \
+             patch("app.perception.ocr_engine.EasyOCREngine", side_effect=RuntimeError("EasyOCR init failed")):
+            with self.assertRaises(RuntimeError) as ctx:
+                OCREngineFactory.create_engine(prefer_real=True)
+            self.assertIn("Real OCR providers unavailable", str(ctx.exception))
+            self.assertIn("TestOCREngine will not be used for real inference", str(ctx.exception))
+
     def test_3_missing_invalid_input_handling(self):
         """Test 4.3: Verify OCR engine handles empty or None input lists gracefully."""
         raw, norm, conf, _ = self.ocr_engine.recognize_text([])
@@ -601,6 +611,134 @@ class TestYoloAndFallbackGeometricFiltering(unittest.TestCase):
         c = self.detector.extract_plate_candidates(img, v_bbox)
         self.assertEqual(len(c), 0, "Valid aspect but excessive area YOLO candidate should be rejected.")
         self.assertGreater(self.detector.fp_rejection_stats["yolo_geometry_rejected"], 0)
+
+
+class TestDevicePropagationAndFallback(unittest.TestCase):
+    """
+    Focused regression tests for GPU-first / CPU-fallback device propagation across
+    PlateDetector, PlateTrackerAssociationManager, and OCREngineFactory.
+    """
+
+    def test_cuda_requested_and_available(self):
+        """CUDA requested + CUDA available -> runtime device cuda."""
+        with unittest.mock.patch("torch.cuda.is_available", return_value=True):
+            detector = PlateDetector(device="cuda")
+            self.assertEqual(detector.runtime_device, "cuda")
+            self.assertEqual(detector.requested_device, "cuda")
+
+    def test_cuda_requested_and_unavailable(self):
+        """CUDA requested + CUDA unavailable -> runtime device cpu."""
+        with unittest.mock.patch("torch.cuda.is_available", return_value=False):
+            detector = PlateDetector(device="cuda")
+            self.assertEqual(detector.runtime_device, "cpu")
+
+    def test_cpu_requested(self):
+        """CPU requested -> CPU."""
+        with unittest.mock.patch("torch.cuda.is_available", return_value=True):
+            detector = PlateDetector(device="cpu")
+            self.assertEqual(detector.runtime_device, "cpu")
+
+    def test_primary_gpu_inference_failure_retries_cpu(self):
+        """Primary GPU inference failure -> CPU retry succeeds."""
+        import numpy as np
+        detector = PlateDetector(device="cuda")
+        detector.runtime_device = "cuda"
+        detector._is_yolo_available = True
+
+        calls = []
+        def mock_plate_model(image, conf, device, verbose=False):
+            calls.append(device)
+            if device == "cuda":
+                raise RuntimeError("CUDA out of memory")
+            # CPU call succeeds
+            mock_box = unittest.mock.MagicMock()
+            mock_box.conf = [0.9]
+            mock_box.xyxy = [[50, 100, 150, 130]]
+            mock_res = unittest.mock.MagicMock()
+            mock_res.boxes = [mock_box]
+            return [mock_res]
+
+        detector.plate_model = mock_plate_model
+        img = np.full((200, 200, 3), 128, dtype=np.uint8)
+        v_bbox = BoundingBoxXYXY(x1=0.0, y1=0.0, x2=200.0, y2=200.0)
+        c = detector.extract_plate_candidates(img, v_bbox)
+
+        self.assertEqual(calls, ["cuda", "cpu"])
+        self.assertEqual(len(c), 1)
+
+    def test_secondary_gpu_inference_failure_retries_cpu(self):
+        """Secondary GPU inference failure -> CPU retry succeeds."""
+        import numpy as np
+        detector = PlateDetector(device="cuda")
+        detector.runtime_device = "cuda"
+        detector._is_yolo_available = True
+
+        calls = []
+        def mock_plate_model(image, conf, device, verbose=False):
+            calls.append((device, conf))
+            if conf == detector.conf_threshold:
+                # Primary pass finds no boxes
+                mock_res = unittest.mock.MagicMock()
+                mock_res.boxes = []
+                return [mock_res]
+            else:
+                # Secondary recovery pass (conf=0.15)
+                if device == "cuda":
+                    raise RuntimeError("CUDA driver error")
+                mock_box = unittest.mock.MagicMock()
+                mock_box.conf = [0.85]
+                mock_box.xyxy = [[50, 20, 150, 50]]
+                mock_res = unittest.mock.MagicMock()
+                mock_res.boxes = [mock_box]
+                return [mock_res]
+
+        detector.plate_model = mock_plate_model
+        img = np.full((200, 200, 3), 128, dtype=np.uint8)
+        v_bbox = BoundingBoxXYXY(x1=0.0, y1=0.0, x2=200.0, y2=200.0)
+        c = detector.extract_plate_candidates(img, v_bbox)
+
+        self.assertIn(("cuda", 0.15), calls)
+        self.assertIn(("cpu", 0.15), calls)
+        self.assertEqual(len(c), 1)
+
+    def test_gpu_and_cpu_both_fail_raises_runtime_error(self):
+        """GPU + CPU both fail -> raises RuntimeError."""
+        import numpy as np
+        detector = PlateDetector(device="cuda")
+        detector.runtime_device = "cuda"
+        detector._is_yolo_available = True
+
+        def mock_plate_model(image, conf, device, verbose=False):
+            if device == "cuda":
+                raise RuntimeError("CUDA explosion")
+            raise RuntimeError("CPU execution error")
+
+        detector.plate_model = mock_plate_model
+        img = np.full((200, 200, 3), 128, dtype=np.uint8)
+        v_bbox = BoundingBoxXYXY(x1=0.0, y1=0.0, x2=200.0, y2=200.0)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            detector.extract_plate_candidates(img, v_bbox)
+        self.assertIn("GPU", str(ctx.exception))
+        self.assertIn("CPU", str(ctx.exception))
+
+    def test_ocr_receives_gpu_true_when_cuda_requested_and_available(self):
+        """OCR receives gpu=True when CUDA is requested and available."""
+        with unittest.mock.patch("torch.cuda.is_available", return_value=True), \
+             unittest.mock.patch("app.perception.plate_association.OCREngineFactory.create_engine") as mock_create:
+            mock_create.return_value = unittest.mock.MagicMock()
+            manager = PlateTrackerAssociationManager(device="cuda")
+            mock_create.assert_called_once_with(prefer_real=True, gpu=True)
+            self.assertEqual(manager.plate_detector.runtime_device, "cuda")
+
+    def test_ocr_receives_gpu_false_when_cuda_unavailable(self):
+        """OCR receives gpu=False when CUDA is unavailable even if requested."""
+        with unittest.mock.patch("torch.cuda.is_available", return_value=False), \
+             unittest.mock.patch("app.perception.plate_association.OCREngineFactory.create_engine") as mock_create:
+            mock_create.return_value = unittest.mock.MagicMock()
+            manager = PlateTrackerAssociationManager(device="cuda")
+            mock_create.assert_called_once_with(prefer_real=True, gpu=False)
+            self.assertEqual(manager.plate_detector.runtime_device, "cpu")
 
 
 if __name__ == "__main__":

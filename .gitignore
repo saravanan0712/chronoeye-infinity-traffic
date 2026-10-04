@@ -109,3 +109,6 @@ checkpoints/**/.venv/
 checkpoints/**/__pycache__/
 checkpoints/**/.pytest_cache/
 checkpoints/**/.git/
+
+# 10. Large Benchmark Datasets & Raw Multi-Camera Videos
+data/videos/multi_cam/

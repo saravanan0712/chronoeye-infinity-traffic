@@ -156,10 +156,21 @@ class PlateTrackerAssociationManager:
         ocr_cache_duration: float = 5.0,
         max_ocr_attempts_per_track: int = 10,
         plate_model_path: str = "backend/models/license_plate_detector.pt",
+        device: str = "cpu",
     ):
-        self.plate_detector = PlateDetector(model_path=plate_model_path)
+        import torch
+
+        self.device = device
+        self.plate_detector = PlateDetector(model_path=plate_model_path, device=device)
         self.preprocessor = PlatePreprocessor()
-        self.ocr_engine = ocr_engine or OCREngineFactory.create_engine(prefer_real=True)
+
+        gpu = str(device).lower().startswith("cuda") and torch.cuda.is_available()
+        print(f"[ALPR] OCR GPU: {gpu}")
+
+        self.ocr_engine = ocr_engine or OCREngineFactory.create_engine(
+            prefer_real=True,
+            gpu=gpu,
+        )
         self.fusion_engine = TemporalPlateFusionEngine()
         self.evidence_records: Dict[str, VehicleIdentityEvidence] = {}
 

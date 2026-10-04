@@ -21,11 +21,22 @@ class PlateDetector:
         max_aspect_ratio: float = 6.5,
         model_path: str = "backend/models/license_plate_detector.pt",
         conf_threshold: float = 0.25,
+        device: str = "cpu",
     ):
         self.min_aspect_ratio = min_aspect_ratio
         self.max_aspect_ratio = max_aspect_ratio
         self.model_path = model_path
         self.conf_threshold = conf_threshold
+        self.requested_device = device
+
+        import torch
+        if str(device).lower().startswith("cuda") and torch.cuda.is_available():
+            self.runtime_device = "cuda"
+        else:
+            self.runtime_device = "cpu"
+
+        print(f"[PlateDetector] Runtime device: {self.runtime_device}")
+
         self.plate_model = None
         self._is_yolo_available = False
 
@@ -303,6 +314,36 @@ class PlateDetector:
         # Fallback dictionary frame representation
         return True, {"type": "vehicle_crop", "bbox": validated_bbox}, validated_bbox
 
+    def _run_yolo_inference(self, image: Any, conf: float) -> Any:
+        """
+        Executes YOLO inference with GPU-first and CPU-fallback semantics.
+        If runtime device is cuda, attempts GPU inference first. If GPU inference fails,
+        retries the inference on CPU. If CPU retry also fails, raises a clear RuntimeError.
+        """
+        if self.plate_model is None:
+            return None
+
+        def _call_model(dev: str):
+            try:
+                return self.plate_model(image, conf=conf, device=dev, verbose=False)
+            except TypeError as te:
+                if "device" in str(te):
+                    return self.plate_model(image, conf=conf, verbose=False)
+                raise
+
+        if self.runtime_device == "cuda":
+            try:
+                return _call_model("cuda")
+            except Exception as gpu_err:
+                try:
+                    return _call_model("cpu")
+                except Exception as cpu_err:
+                    raise RuntimeError(
+                        f"PlateDetector YOLO inference failed on GPU ({gpu_err}) and CPU retry failed ({cpu_err})"
+                    )
+        else:
+            return _call_model("cpu")
+
     def extract_plate_candidates(
         self, vehicle_crop: Any, vehicle_bbox: BoundingBoxXYXY
     ) -> List[Tuple[Any, BoundingBoxXYXY]]:
@@ -325,13 +366,89 @@ class PlateDetector:
 
                 # 1. Run Dedicated YOLO Plate Detector if available
                 if self._is_yolo_available and self.plate_model is not None:
-                    try:
-                        results = self.plate_model(vehicle_crop, conf=self.conf_threshold, verbose=False)
-                        if results and len(results) > 0 and results[0].boxes is not None:
-                            boxes = results[0].boxes
-                            for box in boxes:
-                                conf = float(box.conf[0].item()) if hasattr(box.conf[0], 'item') else float(box.conf[0])
-                                
+                    results = self._run_yolo_inference(vehicle_crop, conf=self.conf_threshold)
+                    if results and len(results) > 0 and results[0].boxes is not None:
+                        boxes = results[0].boxes
+                        for box in boxes:
+                            conf = float(box.conf[0].item()) if hasattr(box.conf[0], 'item') else float(box.conf[0])
+                            
+                            raw_box = box.xyxy[0]
+                            if hasattr(raw_box, "tolist"):
+                                xyxy = raw_box.tolist()
+                            elif isinstance(raw_box, (list, tuple)):
+                                xyxy = list(raw_box)
+                            else:
+                                xyxy = list(box.xyxy)
+                            
+                            px1, py1, px2, py2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+
+                            h_crop, w_crop = vehicle_crop.shape[:2]
+                            v_w, v_h = float(w_crop), float(h_crop)
+                            
+                            # Clip to vehicle crop bounds
+                            px1 = max(0, min(w_crop, px1))
+                            py1 = max(0, min(h_crop, py1))
+                            px2 = max(0, min(w_crop, px2))
+                            py2 = max(0, min(h_crop, py2))
+
+                            box_w = px2 - px1
+                            box_h = py2 - py1
+                            
+                            # 1. Minimum Size Check (Unconditionally minimum 40x12)
+                            if box_w < 40 or box_h < 12:
+                                self.fp_rejection_stats["yolo_geometry_rejected"] += 1
+                                continue
+
+                            # 2. Aspect Ratio Check (0.75 <= aspect <= 6.0)
+                            aspect = box_w / float(max(1, box_h))
+                            if aspect < 0.75 or aspect > 6.0:
+                                self.fp_rejection_stats["yolo_geometry_rejected"] += 1
+                                continue
+                            
+                            # 3 & 4. Relative Vehicle Width and Height (w <= 60% and h <= 40%)
+                            if box_w > v_w * 0.60 or box_h > v_h * 0.40:
+                                self.fp_rejection_stats["yolo_geometry_rejected"] += 1
+                                continue
+
+                            # 5. Relative Area (<= 20% of vehicle crop)
+                            if (box_w * box_h) > (v_w * v_h * 0.20):
+                                self.fp_rejection_stats["yolo_geometry_rejected"] += 1
+                                continue
+                            
+                            # 6. Location Component (generally lower/central; center Y must be >= 25% of vehicle height, avoid roof)
+                            cy = py1 + (box_h / 2.0)
+                            if cy < v_h * 0.25:
+                                self.fp_rejection_stats["yolo_geometry_rejected"] += 1
+                                continue
+
+                            # Add 8% horizontal and 12% vertical margin padding around YOLO box
+                            pad_w = max(4, int(box_w * 0.08))
+                            pad_h = max(3, int(box_h * 0.12))
+                            px1 = max(0, px1 - pad_w)
+                            py1 = max(0, py1 - pad_h)
+                            px2 = min(w_crop, px2 + pad_w)
+                            py2 = min(h_crop, py2 + pad_h)
+
+                            plate_crop = vehicle_crop[py1:py2, px1:px2]
+                            global_pbox = BoundingBoxXYXY(
+                                x1=vehicle_bbox.x1 + px1,
+                                y1=vehicle_bbox.y1 + py1,
+                                x2=vehicle_bbox.x1 + px2,
+                                y2=vehicle_bbox.y1 + py2
+                            )
+                            candidates.append((plate_crop, global_pbox))
+                            self.fp_rejection_stats["yolo_accepted"] += 1
+
+                # 2. Targeted Secondary Recovery Pass on Lower Vehicle ROI (if primary pass found no candidates)
+                if not candidates and self._is_yolo_available and self.plate_model is not None:
+                    h_crop, w_crop = vehicle_crop.shape[:2]
+                    v_w, v_h = float(w_crop), float(h_crop)
+                    if v_h >= 40 and v_w >= 40:
+                        y_offset = int(v_h * 0.35)
+                        lower_roi = vehicle_crop[y_offset:, :]
+                        rec_results = self._run_yolo_inference(lower_roi, conf=0.15)
+                        if rec_results and len(rec_results) > 0 and rec_results[0].boxes is not None:
+                            for box in rec_results[0].boxes:
                                 raw_box = box.xyxy[0]
                                 if hasattr(raw_box, "tolist"):
                                     xyxy = raw_box.tolist()
@@ -340,48 +457,32 @@ class PlateDetector:
                                 else:
                                     xyxy = list(box.xyxy)
                                 
-                                px1, py1, px2, py2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-
-                                h_crop, w_crop = vehicle_crop.shape[:2]
-                                v_w, v_h = float(w_crop), float(h_crop)
-                                
-                                # Clip to vehicle crop bounds
-                                px1 = max(0, min(w_crop, px1))
-                                py1 = max(0, min(h_crop, py1))
-                                px2 = max(0, min(w_crop, px2))
-                                py2 = max(0, min(h_crop, py2))
-
+                                r_px1, r_py1, r_px2, r_py2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                                px1 = max(0, min(w_crop, r_px1))
+                                py1 = max(0, min(h_crop, r_py1 + y_offset))
+                                px2 = max(0, min(w_crop, r_px2))
+                                py2 = max(0, min(h_crop, r_py2 + y_offset))
                                 box_w = px2 - px1
                                 box_h = py2 - py1
-                                
-                                # 1. Minimum Size Check (Unconditionally minimum 40x12)
+
                                 if box_w < 40 or box_h < 12:
                                     self.fp_rejection_stats["yolo_geometry_rejected"] += 1
                                     continue
-
-                                # 2. Aspect Ratio Check (0.75 <= aspect <= 6.0)
                                 aspect = box_w / float(max(1, box_h))
                                 if aspect < 0.75 or aspect > 6.0:
                                     self.fp_rejection_stats["yolo_geometry_rejected"] += 1
                                     continue
-                                
-                                # 3 & 4. Relative Vehicle Width and Height (w <= 60% and h <= 40%)
-                                if box_w > v_w * 0.60 or box_h > v_h * 0.40:
+                                if box_w > v_w * 0.55 or box_h > v_h * 0.35:
                                     self.fp_rejection_stats["yolo_geometry_rejected"] += 1
                                     continue
-
-                                # 5. Relative Area (<= 20% of vehicle crop)
-                                if (box_w * box_h) > (v_w * v_h * 0.20):
+                                if (box_w * box_h) > (v_w * v_h * 0.18):
                                     self.fp_rejection_stats["yolo_geometry_rejected"] += 1
                                     continue
-                                
-                                # 6. Location Component (generally lower/central; center Y must be >= 25% of vehicle height, avoid roof)
                                 cy = py1 + (box_h / 2.0)
-                                if cy < v_h * 0.25:
+                                if cy < v_h * 0.30:
                                     self.fp_rejection_stats["yolo_geometry_rejected"] += 1
                                     continue
 
-                                # Add 8% horizontal and 12% vertical margin padding around YOLO box
                                 pad_w = max(4, int(box_w * 0.08))
                                 pad_h = max(3, int(box_h * 0.12))
                                 px1 = max(0, px1 - pad_w)
@@ -398,73 +499,7 @@ class PlateDetector:
                                 )
                                 candidates.append((plate_crop, global_pbox))
                                 self.fp_rejection_stats["yolo_accepted"] += 1
-                    except Exception:
-                        pass
-
-                # 2. Targeted Secondary Recovery Pass on Lower Vehicle ROI (if primary pass found no candidates)
-                if not candidates and self._is_yolo_available and self.plate_model is not None:
-                    try:
-                        h_crop, w_crop = vehicle_crop.shape[:2]
-                        v_w, v_h = float(w_crop), float(h_crop)
-                        if v_h >= 40 and v_w >= 40:
-                            y_offset = int(v_h * 0.35)
-                            lower_roi = vehicle_crop[y_offset:, :]
-                            rec_results = self.plate_model(lower_roi, conf=0.15, verbose=False)
-                            if rec_results and len(rec_results) > 0 and rec_results[0].boxes is not None:
-                                for box in rec_results[0].boxes:
-                                    raw_box = box.xyxy[0]
-                                    if hasattr(raw_box, "tolist"):
-                                        xyxy = raw_box.tolist()
-                                    elif isinstance(raw_box, (list, tuple)):
-                                        xyxy = list(raw_box)
-                                    else:
-                                        xyxy = list(box.xyxy)
-                                    
-                                    r_px1, r_py1, r_px2, r_py2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-                                    px1 = max(0, min(w_crop, r_px1))
-                                    py1 = max(0, min(h_crop, r_py1 + y_offset))
-                                    px2 = max(0, min(w_crop, r_px2))
-                                    py2 = max(0, min(h_crop, r_py2 + y_offset))
-                                    box_w = px2 - px1
-                                    box_h = py2 - py1
-
-                                    if box_w < 40 or box_h < 12:
-                                        self.fp_rejection_stats["yolo_geometry_rejected"] += 1
-                                        continue
-                                    aspect = box_w / float(max(1, box_h))
-                                    if aspect < 0.75 or aspect > 6.0:
-                                        self.fp_rejection_stats["yolo_geometry_rejected"] += 1
-                                        continue
-                                    if box_w > v_w * 0.55 or box_h > v_h * 0.35:
-                                        self.fp_rejection_stats["yolo_geometry_rejected"] += 1
-                                        continue
-                                    if (box_w * box_h) > (v_w * v_h * 0.18):
-                                        self.fp_rejection_stats["yolo_geometry_rejected"] += 1
-                                        continue
-                                    cy = py1 + (box_h / 2.0)
-                                    if cy < v_h * 0.30:
-                                        self.fp_rejection_stats["yolo_geometry_rejected"] += 1
-                                        continue
-
-                                    pad_w = max(4, int(box_w * 0.08))
-                                    pad_h = max(3, int(box_h * 0.12))
-                                    px1 = max(0, px1 - pad_w)
-                                    py1 = max(0, py1 - pad_h)
-                                    px2 = min(w_crop, px2 + pad_w)
-                                    py2 = min(h_crop, py2 + pad_h)
-
-                                    plate_crop = vehicle_crop[py1:py2, px1:px2]
-                                    global_pbox = BoundingBoxXYXY(
-                                        x1=vehicle_bbox.x1 + px1,
-                                        y1=vehicle_bbox.y1 + py1,
-                                        x2=vehicle_bbox.x1 + px2,
-                                        y2=vehicle_bbox.y1 + py2
-                                    )
-                                    candidates.append((plate_crop, global_pbox))
-                                    self.fp_rejection_stats["yolo_accepted"] += 1
-                                    break
-                    except Exception:
-                        pass
+                                break
 
                 # 3. Contrast & Morphology-Guided Plate Band Localizer (if YOLO passes found no candidate)
                 if not candidates:
@@ -567,6 +602,8 @@ class PlateDetector:
                             candidates.append((fallback_crop, plate_bbox))
                             self.fp_rejection_stats["fallback_accepted"] += 1
 
+        except RuntimeError:
+            raise
         except Exception:
             pass
 

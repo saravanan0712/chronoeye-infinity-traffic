@@ -503,7 +503,14 @@ class OCREngineFactory:
             except Exception:
                 pass
 
-        # Final fallback: deterministic test engine
+            # Fail explicitly if real OCR was requested but no real provider is available.
+            # TestOCREngine is a deterministic test engine and must NOT be used silently for real inference.
+            raise RuntimeError(
+                "Real OCR providers unavailable: PaddleOCR and EasyOCR could not be "
+                "initialized. TestOCREngine will not be used for real inference."
+            )
+
+        # Explicit test / offline fallback when prefer_real=False
         return TestOCREngine()
 
 
