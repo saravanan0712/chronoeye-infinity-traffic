@@ -9,7 +9,7 @@
     "cross_camera_f1": 1.0,
     "global_id_purity": 1.0,
     "id_switches_count": 0,
-    "journey_reconstruction_accuracy": 2.0,
+    "journey_reconstruction_accuracy": 1.0,
     "plate_recognition_accuracy": 1.0,
     "plate_recognition_precision": 1.0,
     "plate_recognition_recall": 1.0,
@@ -24,6 +24,7 @@
     "false_positives": 0,
     "true_negatives": 3,
     "false_negatives": 0,
+    "correct_reconstructed_journeys": 2,
     "exact_plate_matches": 2,
     "total_plate_evaluations": 2
   },

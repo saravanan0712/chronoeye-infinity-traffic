@@ -171,8 +171,8 @@ def evaluate_predictions_against_gt(
     # Positive cross-camera evaluation
     evaluated_cross_targets = 0
     for gt_v in cross_gt_list:
-        gt_id = gt_v["gt_identity"]
-        norm_gt_plate = gt_v.get("normalized_plate", gt_id)
+        gt_id = gt_v.get("gt_identity", "")
+        norm_gt_plate = normalize_plate_string(gt_v.get("normalized_plate") or gt_id) or gt_id
         c1_gids = gt_to_pred_global_ids.get(norm_gt_plate, {}).get("Camera1", set()) | gt_to_pred_global_ids.get(norm_gt_plate, {}).get("CAM_1", set())
         c2_gids = gt_to_pred_global_ids.get(norm_gt_plate, {}).get("Camera2", set()) | gt_to_pred_global_ids.get(norm_gt_plate, {}).get("CAM_2", set())
 
@@ -245,14 +245,50 @@ def evaluate_predictions_against_gt(
         if len(unique_gids) > 1:
             id_switches += (len(unique_gids) - 1)
 
-    # 5. Journey Reconstruction Accuracy
-    correct_journeys = 0
+    # 5. Journey Reconstruction Accuracy (JRA = correctly reconstructed GT cross-camera journeys / total GT cross-camera vehicles)
+    valid_statuses = {"CONFIRMED", "PROBABLE", "ACTIVE", "COMPLETED"}
+
+    # Index qualifying multi-camera journeys from predictions
+    multi_cam_gids = set()
+    multi_cam_plates = set()
     for j in predicted_journeys:
-        cams = j.get("cameras", [])
-        status = j.get("status", "")
-        if len(cams) >= 2 and status in {"CONFIRMED", "PROBABLE", "ACTIVE"}:
+        cams = set(j.get("cameras", []))
+        for seg in j.get("segments", []):
+            cam_id = seg.get("camera_id")
+            if cam_id:
+                cams.add(cam_id)
+        status = str(j.get("status", "")).upper()
+        if len(cams) >= 2 and status in valid_statuses:
+            gid = j.get("global_vehicle_id", "")
+            if gid:
+                multi_cam_gids.add(gid)
+            p = normalize_plate_string(j.get("plate", ""))
+            if p:
+                multi_cam_plates.add(p)
+
+    correct_journeys = 0
+    for gt_v in cross_gt_list:
+        gt_id = gt_v.get("gt_identity", "")
+        norm_gt_plate = normalize_plate_string(gt_v.get("normalized_plate") or gt_id) or gt_id
+        c1_gids = gt_to_pred_global_ids.get(norm_gt_plate, {}).get("Camera1", set()) | gt_to_pred_global_ids.get(norm_gt_plate, {}).get("CAM_1", set())
+        c2_gids = gt_to_pred_global_ids.get(norm_gt_plate, {}).get("Camera2", set()) | gt_to_pred_global_ids.get(norm_gt_plate, {}).get("CAM_2", set())
+        common_gids = c1_gids & c2_gids
+
+        is_reconstructed = False
+        if common_gids:
+            if predicted_journeys:
+                if any(gid in multi_cam_gids for gid in common_gids) or norm_gt_plate in multi_cam_plates:
+                    is_reconstructed = True
+            else:
+                is_reconstructed = True
+        elif predicted_journeys and norm_gt_plate in multi_cam_plates:
+            is_reconstructed = True
+
+        if is_reconstructed:
             correct_journeys += 1
-    journey_accuracy = correct_journeys / max(1, len(cross_gt_list))
+
+    journey_accuracy = (correct_journeys / len(cross_gt_list)) if len(cross_gt_list) > 0 else 0.0
+    journey_accuracy = min(1.0, max(0.0, float(journey_accuracy)))
 
     # 6. Plate Recognition Accuracy
     plate_rows = []
@@ -375,6 +411,7 @@ def evaluate_predictions_against_gt(
             "false_positives": fp,
             "true_negatives": tn,
             "false_negatives": fn,
+            "correct_reconstructed_journeys": correct_journeys,
             "exact_plate_matches": exact_plate_matches,
             "total_plate_evaluations": total_plate_evals,
         },

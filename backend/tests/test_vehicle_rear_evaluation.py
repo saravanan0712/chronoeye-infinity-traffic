@@ -224,6 +224,7 @@ class TestVehicleRearEvaluationMetrics(unittest.TestCase):
         self.assertEqual(report["metrics"]["cross_camera_f1"], 1.0)
         self.assertEqual(report["metrics"]["global_id_purity"], 1.0)
         self.assertEqual(report["metrics"]["id_switches_count"], 0)
+        self.assertEqual(report["metrics"]["journey_reconstruction_accuracy"], 1.0)
 
     def test_05_negative_different_vehicle_separation(self):
         """Test 5: Distinct vehicles receiving different Global IDs do not produce False Positives."""
@@ -426,6 +427,144 @@ class TestVehicleRearEvaluationMetrics(unittest.TestCase):
             lines = f.readlines()
             self.assertEqual(len(lines), 2)  # Header + 1 transition row
             self.assertIn("CONFIRMED", lines[1])
+
+    def test_10_journey_reconstruction_accuracy_bounds_and_grounding(self):
+        """Test 10: Journey Reconstruction Accuracy is bounded [0.0, 1.0] and GT-grounded."""
+        # 1. Zero correct journeys -> produces 0.0
+        gt_two = {
+            "cross_camera_vehicles": [
+                {"gt_identity": "GT_A", "normalized_plate": "GT_A"},
+                {"gt_identity": "GT_B", "normalized_plate": "GT_B"},
+            ],
+            "single_camera_vehicles": [],
+        }
+        no_preds = {"journeys": [], "transitions": [], "raw_records": []}
+        rep_zero = evaluate_predictions_against_gt(no_preds, gt_two, output_dir=self.temp_dir.name)
+        self.assertEqual(rep_zero["metrics"]["journey_reconstruction_accuracy"], 0.0)
+
+        # 2. All GT journeys correctly reconstructed -> produces 1.0
+        perfect_preds = {
+            "journeys": [
+                {
+                    "global_vehicle_id": "V1",
+                    "plate": "GT_A",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "GT_A"},
+                        {"camera_id": "Camera2", "plate_number": "GT_A"},
+                    ],
+                },
+                {
+                    "global_vehicle_id": "V2",
+                    "plate": "GT_B",
+                    "status": "ACTIVE",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "GT_B"},
+                        {"camera_id": "Camera2", "plate_number": "GT_B"},
+                    ],
+                },
+            ],
+            "transitions": [],
+        }
+        rep_full = evaluate_predictions_against_gt(perfect_preds, gt_two, output_dir=self.temp_dir.name)
+        self.assertEqual(rep_full["metrics"]["journey_reconstruction_accuracy"], 1.0)
+        self.assertEqual(rep_full["counts"]["correct_reconstructed_journeys"], 2)
+
+        # 3. Extra predicted journeys cannot cause metric to exceed 1.0 (bounding test)
+        # 1 GT vehicle, but 5 multi-camera predicted journeys
+        gt_single_cross = {
+            "cross_camera_vehicles": [
+                {"gt_identity": "GT_A", "normalized_plate": "GT_A"},
+            ],
+            "single_camera_vehicles": [],
+        }
+        extra_preds = {
+            "journeys": [
+                {
+                    "global_vehicle_id": "V1",
+                    "plate": "GT_A",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "GT_A"},
+                        {"camera_id": "Camera2", "plate_number": "GT_A"},
+                    ],
+                },
+                {
+                    "global_vehicle_id": "V_EXTRA1",
+                    "plate": "OTHER1",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "OTHER1"},
+                        {"camera_id": "Camera2", "plate_number": "OTHER1"},
+                    ],
+                },
+                {
+                    "global_vehicle_id": "V_EXTRA2",
+                    "plate": "OTHER2",
+                    "status": "ACTIVE",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "OTHER2"},
+                        {"camera_id": "Camera2", "plate_number": "OTHER2"},
+                    ],
+                },
+                {
+                    "global_vehicle_id": "V_EXTRA3",
+                    "plate": "OTHER3",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "OTHER3"},
+                        {"camera_id": "Camera2", "plate_number": "OTHER3"},
+                    ],
+                },
+                {
+                    "global_vehicle_id": "V_EXTRA4",
+                    "plate": "OTHER4",
+                    "status": "PROBABLE",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "OTHER4"},
+                        {"camera_id": "Camera2", "plate_number": "OTHER4"},
+                    ],
+                },
+            ],
+            "transitions": [],
+        }
+        rep_bounded = evaluate_predictions_against_gt(extra_preds, gt_single_cross, output_dir=self.temp_dir.name)
+        self.assertEqual(rep_bounded["metrics"]["journey_reconstruction_accuracy"], 1.0)
+        self.assertLessEqual(rep_bounded["metrics"]["journey_reconstruction_accuracy"], 1.0)
+        self.assertGreaterEqual(rep_bounded["metrics"]["journey_reconstruction_accuracy"], 0.0)
+        self.assertEqual(rep_bounded["counts"]["correct_reconstructed_journeys"], 1)
+
+        # 4. Partial reconstruction: 1 of 2 GT vehicles reconstructed -> 0.5
+        partial_preds = {
+            "journeys": [
+                {
+                    "global_vehicle_id": "V1",
+                    "plate": "GT_A",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {"camera_id": "Camera1", "plate_number": "GT_A"},
+                        {"camera_id": "Camera2", "plate_number": "GT_A"},
+                    ],
+                },
+            ],
+            "transitions": [],
+        }
+        rep_partial = evaluate_predictions_against_gt(partial_preds, gt_two, output_dir=self.temp_dir.name)
+        self.assertEqual(rep_partial["metrics"]["journey_reconstruction_accuracy"], 0.5)
+        self.assertEqual(rep_partial["counts"]["correct_reconstructed_journeys"], 1)
+
+        # 5. Empty GT list -> 0.0 without division by zero or errors
+        gt_empty = {"cross_camera_vehicles": [], "single_camera_vehicles": []}
+        rep_empty = evaluate_predictions_against_gt(extra_preds, gt_empty, output_dir=self.temp_dir.name)
+        self.assertEqual(rep_empty["metrics"]["journey_reconstruction_accuracy"], 0.0)
 
 
 if __name__ == "__main__":

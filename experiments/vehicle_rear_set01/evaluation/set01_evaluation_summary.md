@@ -13,7 +13,7 @@
 | **Cross-Camera F1 Score** | **1.0000** | Harmonic mean of association precision and recall |
 | **Global ID Purity** | **1.0000** | Purity of assigned global vehicle identities |
 | **ID Switch Count** | **0** | Number of ID switches observed across cameras |
-| **Journey Accuracy** | **2.0000** | Reconstructed multi-camera route validity |
+| **Journey Accuracy** | **1.0000** | Reconstructed multi-camera route validity |
 | **Plate Recognition Accuracy** | **1.0000** | Exact matching of recognized vs GT plate strings |
 
 ## 3. Dataset & Ground-Truth Counts
