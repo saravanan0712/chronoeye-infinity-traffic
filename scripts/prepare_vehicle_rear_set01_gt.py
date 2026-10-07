@@ -58,17 +58,32 @@ def parse_vehicle_rear_xml(xml_path: str, camera_id: str) -> Dict[str, Dict[str,
         return vehicles
 
     # Format A: <vehicles><vehicle id="..."> ... <frame number="..."> ...
+    # Format B: <GroundTruthRoot><gtruth><vehicle placa="..." iframe="..." ...><region .../>
     for v_elem in root.findall(".//vehicle"):
-        v_id = v_elem.get("id") or v_elem.findtext("id") or ""
-        raw_plate = v_elem.findtext("plate") or v_elem.findtext("license_plate") or v_elem.get("plate") or ""
-        v_type = v_elem.findtext("type") or v_elem.findtext("vehicle_type") or v_elem.get("type") or "car"
-        make = v_elem.findtext("make") or v_elem.findtext("brand") or ""
-        model = v_elem.findtext("model") or ""
-        color = v_elem.findtext("color") or v_elem.findtext("colour") or ""
-        year = v_elem.findtext("year") or ""
-        motorcycle = v_elem.findtext("motorcycle") in {"1", "true", "True"}
-        quality = v_elem.findtext("quality") or "good"
-        discard = v_elem.findtext("discard") in {"1", "true", "True"}
+        v_id = v_elem.get("id") or v_elem.get("iframe") or v_elem.findtext("id") or ""
+        raw_plate = (
+            v_elem.findtext("plate")
+            or v_elem.findtext("license_plate")
+            or v_elem.get("placa")
+            or v_elem.get("plate_number")
+            or ""
+        )
+        if not raw_plate:
+            plate_attr = v_elem.get("plate")
+            if plate_attr and plate_attr.strip().lower() not in {"true", "false", "1", "0"}:
+                raw_plate = plate_attr
+
+        moto_val = v_elem.get("moto") or v_elem.findtext("motorcycle") or v_elem.findtext("moto") or ""
+        motorcycle = str(moto_val).strip().lower() in {"1", "true"}
+
+        v_type = v_elem.findtext("type") or v_elem.findtext("vehicle_type") or v_elem.get("type") or ("motorcycle" if motorcycle else "car")
+        make = v_elem.findtext("make") or v_elem.findtext("brand") or v_elem.get("brand") or v_elem.get("make") or ""
+        model = v_elem.findtext("model") or v_elem.get("model") or ""
+        color = v_elem.findtext("color") or v_elem.findtext("colour") or v_elem.get("color") or v_elem.get("colour") or ""
+        year = v_elem.findtext("year") or v_elem.get("year") or ""
+        quality = v_elem.findtext("quality") or v_elem.get("quality") or "good"
+        discard_val = v_elem.get("discard") or v_elem.findtext("discard") or ""
+        discard = str(discard_val).strip().lower() in {"1", "true"}
 
         norm_plate = normalize_plate_string(raw_plate)
         canonical_id = norm_plate if norm_plate else f"{camera_id}_V{v_id}"
@@ -76,44 +91,71 @@ def parse_vehicle_rear_xml(xml_path: str, camera_id: str) -> Dict[str, Dict[str,
         frame_observations: List[Dict[str, Any]] = []
 
         # Find frames under vehicle
-        for f_elem in v_elem.findall(".//frame"):
-            try:
-                frame_num_str = f_elem.get("number") or f_elem.get("id") or f_elem.findtext("number") or "0"
-                frame_num = int(frame_num_str)
-            except ValueError:
-                continue
-
-            # Plate bbox
-            p_elem = f_elem.find("plate") or f_elem.find("plate_bbox")
-            plate_bbox = None
-            if p_elem is not None:
+        frame_elements = v_elem.findall(".//frame")
+        if frame_elements:
+            for f_elem in frame_elements:
                 try:
-                    px = float(p_elem.get("x") or p_elem.get("x1") or 0)
-                    py = float(p_elem.get("y") or p_elem.get("y1") or 0)
-                    pw = float(p_elem.get("width") or p_elem.get("w") or 0)
-                    ph = float(p_elem.get("height") or p_elem.get("h") or 0)
-                    plate_bbox = [px, py, pw, ph]
-                except (ValueError, TypeError):
-                    plate_bbox = None
+                    frame_num_str = f_elem.get("number") or f_elem.get("id") or f_elem.findtext("number") or "0"
+                    frame_num = int(frame_num_str)
+                except ValueError:
+                    continue
 
-            # Vehicle bbox
-            veh_elem = f_elem.find("vehicle") or f_elem.find("box") or f_elem.find("bbox")
-            veh_bbox = None
-            if veh_elem is not None:
+                # Plate bbox
+                p_elem = f_elem.find("plate") or f_elem.find("plate_bbox")
+                plate_bbox = None
+                if p_elem is not None:
+                    try:
+                        px = float(p_elem.get("x") or p_elem.get("x1") or 0)
+                        py = float(p_elem.get("y") or p_elem.get("y1") or 0)
+                        pw = float(p_elem.get("width") or p_elem.get("w") or 0)
+                        ph = float(p_elem.get("height") or p_elem.get("h") or 0)
+                        plate_bbox = [px, py, pw, ph]
+                    except (ValueError, TypeError):
+                        plate_bbox = None
+
+                # Vehicle bbox
+                veh_elem = f_elem.find("vehicle") or f_elem.find("box") or f_elem.find("bbox")
+                veh_bbox = None
+                if veh_elem is not None:
+                    try:
+                        vx = float(veh_elem.get("x") or veh_elem.get("x1") or 0)
+                        vy = float(veh_elem.get("y") or veh_elem.get("y1") or 0)
+                        vw = float(veh_elem.get("width") or veh_elem.get("w") or 0)
+                        vh = float(veh_elem.get("height") or veh_elem.get("h") or 0)
+                        veh_bbox = [vx, vy, vw, vh]
+                    except (ValueError, TypeError):
+                        veh_bbox = None
+
+                frame_observations.append({
+                    "frame": frame_num,
+                    "plate_bbox": plate_bbox,
+                    "vehicle_bbox": veh_bbox,
+                })
+        else:
+            iframe_val = v_elem.get("iframe")
+            if iframe_val is not None:
                 try:
-                    vx = float(veh_elem.get("x") or veh_elem.get("x1") or 0)
-                    vy = float(veh_elem.get("y") or veh_elem.get("y1") or 0)
-                    vw = float(veh_elem.get("width") or veh_elem.get("w") or 0)
-                    vh = float(veh_elem.get("height") or veh_elem.get("h") or 0)
-                    veh_bbox = [vx, vy, vw, vh]
-                except (ValueError, TypeError):
-                    veh_bbox = None
+                    frame_num = int(iframe_val)
+                except ValueError:
+                    frame_num = 0
 
-            frame_observations.append({
-                "frame": frame_num,
-                "plate_bbox": plate_bbox,
-                "vehicle_bbox": veh_bbox,
-            })
+                plate_bbox = None
+                reg_elem = v_elem.find("region")
+                if reg_elem is not None:
+                    try:
+                        rx = float(reg_elem.get("x") or 0)
+                        ry = float(reg_elem.get("y") or 0)
+                        rw = float(reg_elem.get("w") or reg_elem.get("width") or 0)
+                        rh = float(reg_elem.get("h") or reg_elem.get("height") or 0)
+                        plate_bbox = [rx, ry, rw, rh]
+                    except (ValueError, TypeError):
+                        plate_bbox = None
+
+                frame_observations.append({
+                    "frame": frame_num,
+                    "plate_bbox": plate_bbox,
+                    "vehicle_bbox": None,
+                })
 
         frame_observations.sort(key=lambda x: x["frame"])
 
