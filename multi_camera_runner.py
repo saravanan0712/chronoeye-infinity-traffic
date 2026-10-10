@@ -69,6 +69,22 @@ class MultiCameraRunnerConfig:
     verbose: bool = True
 
 
+def format_timestamp_hms(seconds: float) -> str:
+    """Formats float seconds into HH:MM:SS.mmm formatted string."""
+    if seconds is None or seconds < 0:
+        return "00:00:00.000"
+    hours = int(seconds // 3600)
+    remainder = seconds % 3600
+    minutes = int(remainder // 60)
+    secs = remainder % 60
+    whole_secs = int(secs)
+    millis = int(round((secs - whole_secs) * 1000))
+    if millis >= 1000:
+        whole_secs += 1
+        millis = 0
+    return f"{hours:02d}:{minutes:02d}:{whole_secs:02d}.{millis:03d}"
+
+
 @dataclass
 class CameraStats:
     """Per-camera processing statistics."""
@@ -89,6 +105,7 @@ class MultiCameraRunResult:
     per_camera_stats: Dict[str, CameraStats] = field(default_factory=dict)
     journey_summary: List[Dict[str, Any]] = field(default_factory=list)
     global_vehicle_ids: List[str] = field(default_factory=list)
+    anpr_events: List[Dict[str, Any]] = field(default_factory=list)
     total_runtime_seconds: float = 0.0
     journey_engine: Optional[JourneyReconstructionEngine] = None
 
@@ -278,6 +295,8 @@ class MultiCameraRunner:
             self.workers[cam_cfg.camera_id] = CameraWorker(
                 camera_config=cam_cfg, runner_config=self.config
             )
+        self.anpr_events: List[Dict[str, Any]] = []
+        self.event_lock = threading.Lock()
 
     def feed_track_evidence(
         self,
@@ -310,9 +329,47 @@ class MultiCameraRunner:
                         vehicle_type=track.vehicle_type,
                         associated_plate=None,
                         last_updated_timestamp=meta.timestamp,
+                        frame_id=meta.frame_id,
                     )
+                else:
+                    ev.frame_id = meta.frame_id
                 journey = self.feed_track_evidence(evidence=ev, track=track, frame=frame)
                 journeys.append(journey)
+
+                # Add event-level reporting if plate evidence is present
+                if ev.associated_plate is not None:
+                    p_obj = ev.associated_plate
+                    p_stat = getattr(p_obj, "status", "UNKNOWN")
+                    p_stat_str = str(p_stat.name if hasattr(p_stat, "name") else p_stat)
+                    best_p = getattr(p_obj, "best_plate_number", "")
+                    pend_p = getattr(p_obj, "pending_plate_number", "")
+                    norm_p = best_p or pend_p or ""
+                    raw_p = getattr(p_obj, "raw_plate_text", norm_p) or norm_p
+                    conf_val = getattr(p_obj, "overall_confidence", 0.0)
+
+                    event_type = (
+                        "FUSED_IDENTITY"
+                        if (p_stat_str == "CONFIRMED" or getattr(p_obj, "confirmed", False))
+                        else "ACCEPTED_OBSERVATION"
+                    )
+                    event_record = {
+                        "event_type": event_type,
+                        "camera_id": worker.camera_id,
+                        "source_video": worker.camera_config.source,
+                        "frame_index": meta.frame_id,
+                        "timestamp_seconds": round(meta.timestamp, 3),
+                        "timestamp_hms": format_timestamp_hms(meta.timestamp),
+                        "local_track_id": track.track_id,
+                        "plate_text_raw": raw_p,
+                        "plate_text_norm": norm_p,
+                        "plate_number": norm_p,
+                        "ocr_confidence": round(float(conf_val), 4) if conf_val is not None else 0.0,
+                        "recognition_status": p_stat_str,
+                        "global_vehicle_id": journey.global_vehicle_id if journey else "",
+                        "journey_id": journey.journey_id if journey else "",
+                    }
+                    with self.event_lock:
+                        self.anpr_events.append(event_record)
 
         return journeys
 
@@ -407,6 +464,7 @@ class MultiCameraRunner:
             per_camera_stats=stats_map,
             journey_summary=summary,
             global_vehicle_ids=global_ids,
+            anpr_events=list(self.anpr_events),
             total_runtime_seconds=total_runtime,
             journey_engine=self.journey_engine,
         )

@@ -73,3 +73,4 @@ class VehicleIdentityEvidence(BaseModel):
     raw_vehicle_reference: Optional[str] = None  # Link to Phase 1 simulation vehicle ID
     last_updated_timestamp: float
     timestamp_uncertainty_seconds: Optional[float] = None
+    frame_id: Optional[int] = None

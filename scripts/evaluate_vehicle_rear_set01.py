@@ -103,6 +103,26 @@ def match_track_to_gt(
     return best_gt, avg_iou
 
 
+def format_timestamp_hms(seconds: Optional[float]) -> str:
+    """Formats float seconds into HH:MM:SS.mmm formatted string."""
+    if seconds is None or seconds == "" or float(seconds) < 0:
+        return ""
+    try:
+        sec_f = float(seconds)
+        hours = int(sec_f // 3600)
+        remainder = sec_f % 3600
+        minutes = int(remainder // 60)
+        secs = remainder % 60
+        whole_secs = int(secs)
+        millis = int(round((secs - whole_secs) * 1000))
+        if millis >= 1000:
+            whole_secs += 1
+            millis = 0
+        return f"{hours:02d}:{minutes:02d}:{whole_secs:02d}.{millis:03d}"
+    except (ValueError, TypeError):
+        return ""
+
+
 def evaluate_predictions_against_gt(
     predictions_data: Dict[str, Any],
     gt_cross_data: Dict[str, Any],
@@ -132,12 +152,13 @@ def evaluate_predictions_against_gt(
             gid = r.get("global_vehicle_id", "")
             cam = r.get("camera_id", "")
             gt_id = r.get("matched_gt_id", "")
-            plate = normalize_plate_string(r.get("plate_number", ""))
+            plate = normalize_plate_string(r.get("plate_number", r.get("plate_text_norm", "")))
             if not gt_id and plate:
                 gt_id = plate
             if gt_id:
                 gt_to_pred_global_ids[gt_id][cam].add(gid)
-                global_id_to_gt_members[gid].append(gt_id)
+                if gid:
+                    global_id_to_gt_members[gid].append(gt_id)
                 if plate:
                     gt_to_pred_plates[gt_id].add(plate)
         # Also index journey plates
@@ -158,7 +179,8 @@ def evaluate_predictions_against_gt(
                 matched_gt = norm_p if norm_p else None
                 if matched_gt:
                     gt_to_pred_global_ids[matched_gt][cam].add(gid)
-                    global_id_to_gt_members[gid].append(matched_gt)
+                    if gid:
+                        global_id_to_gt_members[gid].append(matched_gt)
 
     # 2. Cross-Camera Association Metrics
     tp = 0  # Same GT vehicle received same Global ID across cameras
@@ -290,16 +312,20 @@ def evaluate_predictions_against_gt(
     journey_accuracy = (correct_journeys / len(cross_gt_list)) if len(cross_gt_list) > 0 else 0.0
     journey_accuracy = min(1.0, max(0.0, float(journey_accuracy)))
 
-    # 6. Plate Recognition Accuracy
+    # 6. Plate Recognition Accuracy & Metrics (Separated & Audited)
     plate_rows = []
     exact_plate_matches = 0
     total_plate_evals = 0
+    total_predicted_targets = 0
+
     for gt_v in cross_gt_list:
         norm_gt = gt_v.get("normalized_plate", "")
         if not norm_gt:
             continue
         total_plate_evals += 1
         pred_plates = gt_to_pred_plates.get(norm_gt, set())
+        if pred_plates:
+            total_predicted_targets += 1
         matched = norm_gt in pred_plates
         if matched:
             exact_plate_matches += 1
@@ -309,7 +335,11 @@ def evaluate_predictions_against_gt(
             "predicted_plates": list(pred_plates),
             "exact_match": matched,
         })
-    plate_accuracy = exact_plate_matches / total_plate_evals if total_plate_evals > 0 else 0.0
+
+    plate_exact_accuracy = exact_plate_matches / total_plate_evals if total_plate_evals > 0 else 0.0
+    plate_precision = exact_plate_matches / total_predicted_targets if total_predicted_targets > 0 else 0.0
+    plate_recall = exact_plate_matches / total_plate_evals if total_plate_evals > 0 else 0.0
+    plate_f1 = (2 * plate_precision * plate_recall) / (plate_precision + plate_recall) if (plate_precision + plate_recall) > 0 else 0.0
 
     # 7. Seven-Signal Analysis Table Extraction
     signal_rows = []
@@ -359,7 +389,117 @@ def evaluate_predictions_against_gt(
             "rejection_reason": t.get("rejection_reason", "NONE"),
         })
 
-    # Save CSV tables
+    # 8. Additive Artifact 1: Event-Level ANPR Events CSV (set01_anpr_events.csv)
+    anpr_event_rows = []
+    for r in predicted_records:
+        anpr_event_rows.append({
+            "event_type": r.get("event_type", "ACCEPTED_OBSERVATION"),
+            "camera_id": r.get("camera_id", ""),
+            "source_video": r.get("source_video", ""),
+            "frame_index": r.get("frame_index", r.get("frame_id", "")),
+            "timestamp_seconds": r.get("timestamp_seconds", r.get("timestamp", "")),
+            "timestamp_hms": r.get("timestamp_hms") or (format_timestamp_hms(float(r["timestamp"])) if "timestamp" in r else ""),
+            "local_track_id": r.get("local_track_id", r.get("track_id", "")),
+            "plate_text_raw": r.get("plate_text_raw", r.get("raw_text", r.get("plate_number", ""))),
+            "plate_text_norm": r.get("plate_text_norm", r.get("normalized_text", r.get("plate_number", ""))),
+            "ocr_confidence": r.get("ocr_confidence", r.get("confidence", 0.0)),
+            "recognition_status": r.get("recognition_status", r.get("status", r.get("plate_status", "UNKNOWN"))),
+            "global_vehicle_id": r.get("global_vehicle_id", ""),
+            "journey_id": r.get("journey_id", ""),
+        })
+
+    anpr_csv_path = os.path.join(output_dir, "set01_anpr_events.csv")
+    with open(anpr_csv_path, "w", newline="", encoding="utf-8") as f:
+        fieldnames = [
+            "event_type", "camera_id", "source_video", "frame_index",
+            "timestamp_seconds", "timestamp_hms", "local_track_id",
+            "plate_text_raw", "plate_text_norm", "ocr_confidence",
+            "recognition_status", "global_vehicle_id", "journey_id",
+        ]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(anpr_event_rows)
+
+    # 9. Additive Artifact 2: Global Journey Lookup CSV (set01_journey_lookup.csv)
+    journey_lookup_rows = []
+    for j in predicted_journeys:
+        gid = j.get("global_vehicle_id", "")
+        jid = j.get("journey_id", "")
+        plate = j.get("plate", "")
+        v_type = j.get("vehicle_type", "car")
+        j_status = j.get("status", "UNKNOWN")
+        segs = j.get("segments", [])
+
+        c1_segs = [s for s in segs if s.get("camera_id") in ("Camera1", "CAM_1", "CAM_A")]
+        c2_segs = [s for s in segs if s.get("camera_id") in ("Camera2", "CAM_2", "CAM_B")]
+
+        c1_obs = len(c1_segs) > 0
+        c2_obs = len(c2_segs) > 0
+
+        c1_tid = c1_segs[0].get("local_track_id", "") if c1_obs else ""
+        c1_f_frame = c1_segs[0].get("frame_index", c1_segs[0].get("frame_id", "")) if c1_obs else ""
+        c1_l_frame = c1_segs[-1].get("frame_index", c1_segs[-1].get("frame_id", "")) if c1_obs else ""
+        c1_f_raw_ts = c1_segs[0].get("timestamp", c1_segs[0].get("timestamp_seconds")) if c1_obs else None
+        c1_l_raw_ts = c1_segs[-1].get("timestamp", c1_segs[-1].get("timestamp_seconds")) if c1_obs else None
+        c1_f_ts = round(float(c1_f_raw_ts), 3) if c1_f_raw_ts is not None and c1_f_raw_ts != "" else ""
+        c1_f_hms = format_timestamp_hms(c1_f_ts) if c1_f_ts != "" else ""
+        c1_l_ts = round(float(c1_l_raw_ts), 3) if c1_l_raw_ts is not None and c1_l_raw_ts != "" else ""
+        c1_l_hms = format_timestamp_hms(c1_l_ts) if c1_l_ts != "" else ""
+
+        c2_tid = c2_segs[0].get("local_track_id", "") if c2_obs else ""
+        c2_f_frame = c2_segs[0].get("frame_index", c2_segs[0].get("frame_id", "")) if c2_obs else ""
+        c2_l_frame = c2_segs[-1].get("frame_index", c2_segs[-1].get("frame_id", "")) if c2_obs else ""
+        c2_f_raw_ts = c2_segs[0].get("timestamp", c2_segs[0].get("timestamp_seconds")) if c2_obs else None
+        c2_l_raw_ts = c2_segs[-1].get("timestamp", c2_segs[-1].get("timestamp_seconds")) if c2_obs else None
+        c2_f_ts = round(float(c2_f_raw_ts), 3) if c2_f_raw_ts is not None and c2_f_raw_ts != "" else ""
+        c2_f_hms = format_timestamp_hms(c2_f_ts) if c2_f_ts != "" else ""
+        c2_l_ts = round(float(c2_l_raw_ts), 3) if c2_l_raw_ts is not None and c2_l_raw_ts != "" else ""
+        c2_l_hms = format_timestamp_hms(c2_l_ts) if c2_l_ts != "" else ""
+
+        transit_time = ""
+        if c1_obs and c2_obs and isinstance(c1_l_ts, (int, float)) and isinstance(c2_f_ts, (int, float)):
+            transit_time = round(float(c2_f_ts) - float(c1_l_ts), 3)
+
+        journey_lookup_rows.append({
+            "global_vehicle_id": gid,
+            "journey_id": jid,
+            "plate_number": plate,
+            "vehicle_type": v_type,
+            "status": j_status,
+            "cam1_observed": c1_obs,
+            "cam1_track_id": c1_tid,
+            "cam1_first_frame": c1_f_frame,
+            "cam1_last_frame": c1_l_frame,
+            "cam1_first_ts_sec": c1_f_ts,
+            "cam1_first_ts_hms": c1_f_hms,
+            "cam1_last_ts_sec": c1_l_ts,
+            "cam1_last_ts_hms": c1_l_hms,
+            "cam2_observed": c2_obs,
+            "cam2_track_id": c2_tid,
+            "cam2_first_frame": c2_f_frame,
+            "cam2_last_frame": c2_l_frame,
+            "cam2_first_ts_sec": c2_f_ts,
+            "cam2_first_ts_hms": c2_f_hms,
+            "cam2_last_ts_sec": c2_l_ts,
+            "cam2_last_ts_hms": c2_l_hms,
+            "transit_time_seconds": transit_time,
+        })
+
+    lookup_csv_path = os.path.join(output_dir, "set01_journey_lookup.csv")
+    with open(lookup_csv_path, "w", newline="", encoding="utf-8") as f:
+        fieldnames = [
+            "global_vehicle_id", "journey_id", "plate_number", "vehicle_type", "status",
+            "cam1_observed", "cam1_track_id", "cam1_first_frame", "cam1_last_frame",
+            "cam1_first_ts_sec", "cam1_first_ts_hms", "cam1_last_ts_sec", "cam1_last_ts_hms",
+            "cam2_observed", "cam2_track_id", "cam2_first_frame", "cam2_last_frame",
+            "cam2_first_ts_sec", "cam2_first_ts_hms", "cam2_last_ts_sec", "cam2_last_ts_hms",
+            "transit_time_seconds",
+        ]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(journey_lookup_rows)
+
+    # Save existing CSV tables
     assoc_csv_path = os.path.join(output_dir, "set01_association_results.csv")
     with open(assoc_csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["gt_identity", "normalized_plate", "camera1_global_id", "camera2_global_id", "same_global_id", "result_status"])
@@ -384,7 +524,7 @@ def evaluate_predictions_against_gt(
         writer.writeheader()
         writer.writerows(signal_rows)
 
-    # 8. Construct Final Summary and JSON Report
+    # 10. Construct Final Summary and JSON Report
     report = {
         "experiment_name": "vehicle_rear_set01_evaluation",
         "dataset": "Vehicle-Rear Set01",
@@ -397,10 +537,14 @@ def evaluate_predictions_against_gt(
             "global_id_purity": round(mean_purity, 4),
             "id_switches_count": id_switches,
             "journey_reconstruction_accuracy": round(journey_accuracy, 4),
-            "plate_recognition_accuracy": round(plate_accuracy, 4),
-            "plate_recognition_precision": round(plate_accuracy, 4),
-            "plate_recognition_recall": round(plate_accuracy, 4),
-            "plate_recognition_f1": round(plate_accuracy, 4),
+            "plate_recognition_accuracy": round(plate_exact_accuracy, 4),
+            "plate_exact_match_accuracy": round(plate_exact_accuracy, 4),
+            "plate_recognition_precision": round(plate_precision, 4),
+            "plate_recognition_recall": round(plate_recall, 4),
+            "plate_recognition_f1": round(plate_f1, 4),
+            "plate_precision": round(plate_precision, 4),
+            "plate_recall": round(plate_recall, 4),
+            "plate_f1": round(plate_f1, 4),
         },
         "counts": {
             "gt_cross_camera_vehicles_total": len(cross_gt_list),
@@ -414,6 +558,8 @@ def evaluate_predictions_against_gt(
             "correct_reconstructed_journeys": correct_journeys,
             "exact_plate_matches": exact_plate_matches,
             "total_plate_evaluations": total_plate_evals,
+            "total_anpr_events_recorded": len(anpr_event_rows),
+            "total_reconstructed_journeys": len(predicted_journeys),
         },
         "signal_availability": signal_availability,
         "frozen_parameters_verified": {
@@ -433,6 +579,8 @@ def evaluate_predictions_against_gt(
             "association_csv": "set01_association_results.csv",
             "plate_csv": "set01_plate_results.csv",
             "signal_csv": "set01_signal_analysis.csv",
+            "anpr_events_csv": "set01_anpr_events.csv",
+            "journey_lookup_csv": "set01_journey_lookup.csv",
         },
     }
 
@@ -458,7 +606,10 @@ def evaluate_predictions_against_gt(
 | **Global ID Purity** | **{mean_purity:.4f}** | Purity of assigned global vehicle identities |
 | **ID Switch Count** | **{id_switches}** | Number of ID switches observed across cameras |
 | **Journey Accuracy** | **{journey_accuracy:.4f}** | Reconstructed multi-camera route validity |
-| **Plate Recognition Accuracy** | **{plate_accuracy:.4f}** | Exact matching of recognized vs GT plate strings |
+| **Plate Exact Match Accuracy** | **{plate_exact_accuracy:.4f}** | Exact matching of recognized vs GT plate strings |
+| **Plate Precision** | **{plate_precision:.4f}** | Precision of plate recognition predictions |
+| **Plate Recall** | **{plate_recall:.4f}** | Recall of GT vehicle plate strings |
+| **Plate F1 Score** | **{plate_f1:.4f}** | Harmonic mean of plate precision and recall |
 
 ## 3. Dataset & Ground-Truth Counts
 - **Total Cross-Camera GT Vehicles**: {len(cross_gt_list)}
@@ -467,6 +618,8 @@ def evaluate_predictions_against_gt(
 - **False Positives (FP)**: {fp}
 - **False Negatives (FN)**: {fn}
 - **True Negatives (TN)**: {tn}
+- **Total ANPR Events Recorded**: {len(anpr_event_rows)}
+- **Total Reconstructed Journeys**: {len(predicted_journeys)}
 
 ## 4. Seven-Signal Availability Analysis
 | Signal Component | Active / Populated | Weight |
@@ -481,9 +634,12 @@ def evaluate_predictions_against_gt(
 
 ## 5. Artifacts Generated
 - [`set01_evaluation_report.json`](set01_evaluation_report.json)
+- [`set01_summary_md`](set01_evaluation_summary.md)
 - [`set01_association_results.csv`](set01_association_results.csv)
 - [`set01_plate_results.csv`](set01_plate_results.csv)
 - [`set01_signal_analysis.csv`](set01_signal_analysis.csv)
+- [`set01_anpr_events.csv`](set01_anpr_events.csv)
+- [`set01_journey_lookup.csv`](set01_journey_lookup.csv)
 """
 
     with open(summary_md_path, "w", encoding="utf-8") as f:
@@ -492,7 +648,10 @@ def evaluate_predictions_against_gt(
     print(f"\n[Evaluation Complete] Report saved to: {report_json_path}")
     print(f"  Cross-Camera Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f}")
     print(f"  Global ID Purity:       {mean_purity:.4f} | ID Switches: {id_switches}")
-    print(f"  Plate Accuracy:         {plate_accuracy:.4f} | Journey Accuracy: {journey_accuracy:.4f}")
+    print(f"  Plate Exact Match Acc:  {plate_exact_accuracy:.4f} | Plate F1: {plate_f1:.4f}")
+    print(f"  Journey Accuracy:       {journey_accuracy:.4f}")
+    print(f"  Saved ANPR Events CSV:  {anpr_csv_path}")
+    print(f"  Saved Journey Lookup:   {lookup_csv_path}")
 
     return report
 
@@ -563,7 +722,9 @@ def run_pipeline_inference(
                 {
                     "camera_id": s.camera_id,
                     "local_track_id": getattr(s, "track_id", getattr(s, "local_track_id", "")),
+                    "frame_index": getattr(s, "frame_id", getattr(s, "frame_index", None)),
                     "timestamp": getattr(s, "timestamp", 0.0),
+                    "timestamp_hms": format_timestamp_hms(getattr(s, "timestamp", 0.0)),
                     "timestamp_uncertainty_seconds": getattr(s, "timestamp_uncertainty_seconds", None),
                     "plate_number": getattr(s, "plate_number", ""),
                     "plate_confidence": getattr(s, "plate_confidence", None),
@@ -600,7 +761,7 @@ def run_pipeline_inference(
         "total_global_vehicles": len(journeys_data),
         "journeys": journeys_data,
         "transitions": transitions_data,
-        "raw_records": [],
+        "raw_records": getattr(result, "anpr_events", []),
     }
 
     os.makedirs(os.path.dirname(predictions_out), exist_ok=True)

@@ -280,6 +280,7 @@ class JourneyReconstructionEngine:
         seg = JourneySegment(
             camera_id=evidence.camera_id,
             track_id=track.track_id,
+            frame_id=getattr(evidence, "frame_id", getattr(track, "frame_id", None)),
             timestamp=evidence.last_updated_timestamp,
             timestamp_uncertainty_seconds=getattr(evidence, "timestamp_uncertainty_seconds", None),
             bbox=track.current_bbox,

@@ -566,6 +566,275 @@ class TestVehicleRearEvaluationMetrics(unittest.TestCase):
         rep_empty = evaluate_predictions_against_gt(extra_preds, gt_empty, output_dir=self.temp_dir.name)
         self.assertEqual(rep_empty["metrics"]["journey_reconstruction_accuracy"], 0.0)
 
+    def test_11_timestamp_conversion_and_formatting(self):
+        """Test 11: Format timestamp converts seconds to HH:MM:SS.mmm format."""
+        from scripts.evaluate_vehicle_rear_set01 import format_timestamp_hms
+        self.assertEqual(format_timestamp_hms(0.0), "00:00:00.000")
+        self.assertEqual(format_timestamp_hms(0.038), "00:00:00.038")
+        self.assertEqual(format_timestamp_hms(65.456), "00:01:05.456")
+        self.assertEqual(format_timestamp_hms(3665.123), "01:01:05.123")
+        self.assertEqual(format_timestamp_hms(None), "")
+        self.assertEqual(format_timestamp_hms(-1.0), "")
+
+    def test_12_anpr_events_csv_generation_and_schema(self):
+        """Test 12: Generates set01_anpr_events.csv with all required columns and event types."""
+        import csv
+        gt_cross = {
+            "cross_camera_vehicles": [
+                {"gt_identity": "ABC1234", "normalized_plate": "ABC1234"},
+            ],
+            "single_camera_vehicles": [],
+        }
+        predictions = {
+            "journeys": [
+                {
+                    "global_vehicle_id": "VEH_101",
+                    "journey_id": "JRN_101",
+                    "plate": "ABC1234",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1"],
+                    "segments": [
+                        {
+                            "camera_id": "Camera1",
+                            "local_track_id": "TRK_101",
+                            "frame_index": 12,
+                            "timestamp": 0.48,
+                            "plate_number": "ABC1234",
+                        }
+                    ],
+                }
+            ],
+            "transitions": [],
+            "raw_records": [
+                {
+                    "event_type": "ACCEPTED_OBSERVATION",
+                    "camera_id": "Camera1",
+                    "source_video": "Camera1/Set01.mp4",
+                    "frame_index": 12,
+                    "timestamp_seconds": 0.48,
+                    "timestamp_hms": "00:00:00.480",
+                    "local_track_id": "TRK_101",
+                    "plate_text_raw": "ABC-1234",
+                    "plate_text_norm": "ABC1234",
+                    "ocr_confidence": 0.92,
+                    "recognition_status": "VALID",
+                    "global_vehicle_id": "VEH_101",
+                    "journey_id": "JRN_101",
+                }
+            ],
+        }
+
+        report = evaluate_predictions_against_gt(
+            predictions_data=predictions,
+            gt_cross_data=gt_cross,
+            output_dir=self.temp_dir.name,
+        )
+
+        anpr_csv = os.path.join(self.temp_dir.name, "set01_anpr_events.csv")
+        self.assertTrue(os.path.exists(anpr_csv))
+        with open(anpr_csv, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            self.assertEqual(len(rows), 1)
+            r = rows[0]
+            self.assertEqual(r["event_type"], "ACCEPTED_OBSERVATION")
+            self.assertEqual(r["camera_id"], "Camera1")
+            self.assertEqual(r["frame_index"], "12")
+            self.assertEqual(r["local_track_id"], "TRK_101")
+            self.assertEqual(r["plate_text_norm"], "ABC1234")
+            self.assertEqual(r["recognition_status"], "VALID")
+            self.assertEqual(r["global_vehicle_id"], "VEH_101")
+
+    def test_13_journey_lookup_csv_and_missing_cameras(self):
+        """Test 13: set01_journey_lookup.csv properly distinguishes cross-camera vs single-camera."""
+        import csv
+        gt_cross = {
+            "cross_camera_vehicles": [
+                {"gt_identity": "ABC1234", "normalized_plate": "ABC1234"},
+            ],
+            "single_camera_vehicles": [
+                {"vehicle_gt_id": "SINGLE99", "normalized_plate": "SINGLE99"},
+            ],
+        }
+        predictions = {
+            "journeys": [
+                # Cross-camera journey
+                {
+                    "global_vehicle_id": "VEH_101",
+                    "journey_id": "JRN_101",
+                    "plate": "ABC1234",
+                    "vehicle_type": "car",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1", "Camera2"],
+                    "segments": [
+                        {
+                            "camera_id": "Camera1",
+                            "local_track_id": "TRK_101",
+                            "frame_index": 10,
+                            "timestamp": 0.40,
+                            "plate_number": "ABC1234",
+                        },
+                        {
+                            "camera_id": "Camera2",
+                            "local_track_id": "TRK_205",
+                            "frame_index": 300,
+                            "timestamp": 12.00,
+                            "plate_number": "ABC1234",
+                        },
+                    ],
+                },
+                # Single-camera journey (Camera 1 only)
+                {
+                    "global_vehicle_id": "VEH_102",
+                    "journey_id": "JRN_102",
+                    "plate": "SINGLE99",
+                    "vehicle_type": "truck",
+                    "status": "ACTIVE",
+                    "cameras": ["Camera1"],
+                    "segments": [
+                        {
+                            "camera_id": "Camera1",
+                            "local_track_id": "TRK_102",
+                            "frame_index": 15,
+                            "timestamp": 0.60,
+                            "plate_number": "SINGLE99",
+                        }
+                    ],
+                },
+            ],
+            "transitions": [],
+            "raw_records": [],
+        }
+
+        evaluate_predictions_against_gt(
+            predictions_data=predictions,
+            gt_cross_data=gt_cross,
+            output_dir=self.temp_dir.name,
+        )
+
+        lookup_csv = os.path.join(self.temp_dir.name, "set01_journey_lookup.csv")
+        self.assertTrue(os.path.exists(lookup_csv))
+        with open(lookup_csv, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            self.assertEqual(len(rows), 2)
+
+            # Row 1: Cross-camera vehicle
+            r1 = rows[0]
+            self.assertEqual(r1["global_vehicle_id"], "VEH_101")
+            self.assertEqual(r1["cam1_observed"], "True")
+            self.assertEqual(r1["cam1_track_id"], "TRK_101")
+            self.assertEqual(r1["cam1_first_ts_sec"], "0.4")
+            self.assertEqual(r1["cam2_observed"], "True")
+            self.assertEqual(r1["cam2_track_id"], "TRK_205")
+            self.assertEqual(r1["cam2_first_ts_sec"], "12.0")
+            self.assertEqual(float(r1["transit_time_seconds"]), 11.6)
+
+            # Row 2: Single-camera vehicle (Camera 1 only)
+            r2 = rows[1]
+            self.assertEqual(r2["global_vehicle_id"], "VEH_102")
+            self.assertEqual(r2["cam1_observed"], "True")
+            self.assertEqual(r2["cam1_track_id"], "TRK_102")
+            self.assertEqual(r2["cam2_observed"], "False")
+            self.assertEqual(r2["cam2_track_id"], "")
+            self.assertEqual(r2["cam2_first_ts_sec"], "")
+            self.assertEqual(r2["transit_time_seconds"], "")  # NOT invented!
+
+    def test_14_audited_plate_metrics_separation(self):
+        """Test 14: Plate exact match accuracy, precision, recall, and F1 are computed independently."""
+        gt_cross = {
+            "cross_camera_vehicles": [
+                {"gt_identity": "ABC1234", "normalized_plate": "ABC1234"},
+                {"gt_identity": "XYZ5678", "normalized_plate": "XYZ5678"},
+            ],
+            "single_camera_vehicles": [],
+        }
+
+        # 1 of 2 GT plates matched (ABC1234 matched, XYZ5678 not predicted)
+        predictions = {
+            "journeys": [
+                {
+                    "global_vehicle_id": "VEH_1",
+                    "plate": "ABC1234",
+                    "status": "CONFIRMED",
+                    "cameras": ["Camera1"],
+                    "segments": [{"camera_id": "Camera1", "plate_number": "ABC1234"}],
+                },
+            ],
+            "transitions": [],
+            "raw_records": [],
+        }
+
+        report = evaluate_predictions_against_gt(
+            predictions_data=predictions,
+            gt_cross_data=gt_cross,
+            output_dir=self.temp_dir.name,
+        )
+
+        metrics = report["metrics"]
+        # 1 match out of 2 GT plates: Recall = 0.5, Precision = 1.0 (1 correct out of 1 predicted target), F1 = 0.6667
+        self.assertEqual(metrics["plate_exact_match_accuracy"], 0.5)
+        self.assertEqual(metrics["plate_recall"], 0.5)
+        self.assertEqual(metrics["plate_precision"], 1.0)
+        self.assertAlmostEqual(metrics["plate_f1"], 2 * 1.0 * 0.5 / (1.0 + 0.5), places=4)
+
+    def test_15_regression_camera_local_track_id_collision(self):
+        """
+        Test 15 (Phase 4 Regression):
+        Demonstrates that JourneyReconstructionEngine.track_to_journey_map is keyed by track_id alone.
+        When Camera 1 and Camera 2 both emit TRK_101 for different vehicles, TRK_101 hits branch 1
+        and merges into Camera 1's journey without candidate matching.
+        """
+        from app.schemas.tracking import TrackState, BoundingBoxXYXY
+        from app.schemas.plate import VehicleIdentityEvidence
+        from app.perception.journey import JourneyReconstructionEngine
+
+        engine = JourneyReconstructionEngine()
+
+        # Cam 1 emits TRK_101
+        track_c1 = TrackState(
+            track_id="TRK_101",
+            camera_id="Camera1",
+            vehicle_type="car",
+            current_bbox=BoundingBoxXYXY(x1=10, y1=10, x2=100, y2=100),
+            current_center=(55.0, 55.0),
+            confidence=0.9,
+            first_seen_timestamp=1.0,
+            last_seen_timestamp=1.0,
+        )
+        ev_c1 = VehicleIdentityEvidence(
+            track_id="TRK_101",
+            camera_id="Camera1",
+            vehicle_type="car",
+            last_updated_timestamp=1.0,
+        )
+        j1 = engine.process_track_evidence(evidence=ev_c1, track=track_c1)
+        self.assertEqual(j1.global_vehicle_id, "VEH_101")
+        self.assertIn("TRK_101", engine.track_to_journey_map)
+
+        # Cam 2 independently emits TRK_101 (a different vehicle in Cam 2)
+        track_c2 = TrackState(
+            track_id="TRK_101",
+            camera_id="Camera2",
+            vehicle_type="truck",
+            current_bbox=BoundingBoxXYXY(x1=500, y1=500, x2=800, y2=800),
+            current_center=(650.0, 650.0),
+            confidence=0.9,
+            first_seen_timestamp=10.0,
+            last_seen_timestamp=10.0,
+        )
+        ev_c2 = VehicleIdentityEvidence(
+            track_id="TRK_101",
+            camera_id="Camera2",
+            vehicle_type="truck",
+            last_updated_timestamp=10.0,
+        )
+        j2 = engine.process_track_evidence(evidence=ev_c2, track=track_c2)
+
+        # Demonstrates collision: j2 is the SAME journey JRN_101 because track_to_journey_map is unnamespaced
+        self.assertEqual(j2.journey_id, j1.journey_id)
+        self.assertEqual(engine.track_to_journey_map["TRK_101"], j1.journey_id)
+
 
 if __name__ == "__main__":
     unittest.main()

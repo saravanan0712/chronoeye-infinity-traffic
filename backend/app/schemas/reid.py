@@ -62,6 +62,7 @@ class JourneySegment(BaseModel):
     segment_id: str = Field(default_factory=lambda: f"SEG_{uuid.uuid4().hex[:8]}")
     camera_id: str
     track_id: str
+    frame_id: Optional[int] = None
     timestamp: float = 0.0
     timestamp_uncertainty_seconds: Optional[float] = None
     bbox: Optional[BoundingBoxXYXY] = None
