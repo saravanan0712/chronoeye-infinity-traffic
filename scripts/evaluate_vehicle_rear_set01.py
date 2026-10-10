@@ -755,10 +755,39 @@ def run_pipeline_inference(
                     "transition_breakdown": bk,
                 })
 
+    c1_stats = result.per_camera_stats.get("Camera1")
+    c2_stats = result.per_camera_stats.get("Camera2")
+    c1_processed = c1_stats.frames_processed if c1_stats else 0
+    c2_processed = c2_stats.frames_processed if c2_stats else 0
+    c1_read = c1_stats.frames_read if c1_stats else 0
+    c2_read = c2_stats.frames_read if c2_stats else 0
+    tot_processed = c1_processed + c2_processed
+    tot_read = c1_read + c2_read
+    unique_tracks_total = sum(len(st.unique_tracks) for st in result.per_camera_stats.values())
+    ocr_events_count = len(getattr(result, "anpr_events", []))
+
+    frame_summary = {
+        "camera1_frames_read": c1_read,
+        "camera1_frames_processed": c1_processed,
+        "camera1_expected_frames": 35217,
+        "camera2_frames_read": c2_read,
+        "camera2_frames_processed": c2_processed,
+        "camera2_expected_frames": 36067,
+        "total_frames_read": tot_read,
+        "total_frames_processed": tot_processed,
+        "expected_total_frames": 71284,
+        "total_local_tracks": unique_tracks_total,
+        "total_ocr_events": ocr_events_count,
+        "total_global_vehicles": len(journeys_data),
+        "total_reconstructed_journeys": len(journeys_data),
+        "complete_video_processed": (tot_processed >= 71284 if max_frames == 0 else False),
+    }
+
     predictions = {
         "dataset_name": "Vehicle-Rear Set01",
         "runtime_seconds": round(elapsed, 2),
         "total_global_vehicles": len(journeys_data),
+        "frame_processing_summary": frame_summary,
         "journeys": journeys_data,
         "transitions": transitions_data,
         "raw_records": getattr(result, "anpr_events", []),
@@ -768,7 +797,10 @@ def run_pipeline_inference(
     with open(predictions_out, "w", encoding="utf-8") as f:
         json.dump(predictions, f, indent=2)
 
-    print(f"[Inference Complete] {len(journeys_data)} global journeys reconstructed in {elapsed:.2f}s.")
+    print(f"\n[Inference Complete] {len(journeys_data)} global journeys reconstructed in {elapsed:.2f}s.")
+    print(f"  Camera 1: {c1_processed} frames processed (Expected: 35217)")
+    print(f"  Camera 2: {c2_processed} frames processed (Expected: 36067)")
+    print(f"  Total Frames: {tot_processed} / 71284 | OCR Events: {ocr_events_count} | Local Tracks: {unique_tracks_total}")
     print(f"  Saved raw predictions to: {predictions_out}")
 
     return predictions
